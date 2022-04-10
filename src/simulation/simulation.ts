@@ -4,15 +4,7 @@ import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
 import {bgHeight, bgWidth} from "../App";
 import {textStyle} from "styled-system";
 import {Dot, SimulationObjects} from "./pathParser";
-
-interface SimCar {
-    sprite: PIXI.Sprite,
-    cx: number,
-    cy: number,
-    currentAngle: number,
-    angleStep: number,
-    radius: number
-}
+import {initCars} from "./carTicker";
 
 export function createApp(simulationObjects: SimulationObjects): PIXI.Application {
     const app = new PIXI.Application({
@@ -32,6 +24,7 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
         app.stage.addChild(pointsGraphic);
     });
 
+    /*
     const cx = app.screen.width / 2;
     const cy = app.screen.height / 2;
 
@@ -48,6 +41,9 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
 
     })
 
+     */
+
+    /*
     cars.forEach((car) => {
         car.sprite.x = car.cx + Math.sin(car.currentAngle) * car.radius;
         car.sprite.y = car.cy + Math.cos(car.currentAngle) * car.radius;
@@ -62,7 +58,11 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
         car.sprite.scale.y = .3;
     });
 
+     */
 
+
+
+    /*
     app.ticker.add((delta) => {
         cars.forEach((car) => {
             car.sprite.x = car.cx + Math.sin(car.currentAngle) * car.radius;
@@ -71,6 +71,9 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
             car.currentAngle += car.angleStep * delta % 360;
         });
     });
+
+     */
+    initCars(app, simulationObjects);
     app.start();
     return app;
 }

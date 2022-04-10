@@ -109,13 +109,13 @@ export function parsePath(pathDescription: String): Dot[] {
 
 }
 
-function pointBetween(a: Dot, b: Dot, scale: number): Dot {
+export function pointBetween(a: Dot, b: Dot, scale: number): Dot {
     const diffX = (a.x - b.x) * scale;
     const diffY = (a.y - b.y) * scale;
     return {x: a.x - diffX, y: a.y - diffY};
 }
 
-function distance(a: Dot, b: Dot) {
+export function distance(a: Dot, b: Dot) {
     const diffX = a.x - b.x;
     const diffY = a.y - b.y;
     return Math.abs(Math.hypot(diffX, diffY));
