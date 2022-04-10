@@ -7,9 +7,39 @@ export interface Dot {
     y: number
 }
 
+export interface SimulationObjects {
+    streets: Street[]
+}
+
+export interface Street {
+    dots: Dot[],
+    name: string,
+}
+
+export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<SimulationObjects> {
+    const streets: Street[] = [];
+    const text = await (await fetch(assetPath)).text();
+    let parser = new DOMParser();
+    let xmlDoc = parser.parseFromString(text, "text/xml");
+    let items = xmlDoc.getElementsByTagName("g");
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const attributes = (item.getAttribute("inkscape:label") ?? "").split(";");
+        if (attributes.length >= 1 && attributes[0] === "S") {
+            const itemPaths = item.getElementsByTagName("path");
+            if (itemPaths.length !== 1) {
+                throw new Error(`Street ${attributes[1]} contains more than one path. This is illegal`);
+            }
+            const path = parsePath(itemPaths[0].getAttribute("d") ?? "");
+            streets.push({name: attributes[1], dots: path});
+            console.log("loaded street: " + item.getAttribute("inkscape:label"));
+        }
+    }
+    return {streets: streets};
+}
+
 export function parsePath(pathDescription: String): Dot[] {
     const commands: Command[] = parseSVG(pathDescription);
-    console.log(commands);
     let points: Dot[] = [];
     let currentPosition: Dot = {x: 0, y: 0};
 
@@ -45,7 +75,8 @@ export function parsePath(pathDescription: String): Dot[] {
         //point distribution in bezier curves is not linear.
         //Normalize point distribution to have equal distance between all points
         if (points.length > 0) {
-            const dist = 1;
+            //this variable controls the distance between the equally distributed points
+            const dist = 7;
             let i = 0;
             let normalizedPoints = [];
             let neededDist = dist;
@@ -53,19 +84,19 @@ export function parsePath(pathDescription: String): Dot[] {
 
             //starting point
             normalizedPoints.push(points[i]);
-            while (i < points.length-1) {
-                const distToNext = distance(curPoint, points[i+1])
-                if(distToNext < neededDist) {
+            while (i < points.length - 1) {
+                const distToNext = distance(curPoint, points[i + 1])
+                if (distToNext < neededDist) {
                     neededDist -= distToNext;
-                    curPoint = points[i+1];
+                    curPoint = points[i + 1];
                     i++;
-                } else if(distToNext > neededDist) {
-                    let distScale = 1/(distToNext / neededDist);
-                    curPoint = pointBetween(curPoint, points[i+1], distScale);
+                } else if (distToNext > neededDist) {
+                    let distScale = 1 / (distToNext / neededDist);
+                    curPoint = pointBetween(curPoint, points[i + 1], distScale);
                     neededDist = dist;
                     normalizedPoints.push(curPoint);
                 } else {
-                    curPoint = points[i+1];
+                    curPoint = points[i + 1];
                     normalizedPoints.push(curPoint);
                     neededDist = dist;
                     i++;

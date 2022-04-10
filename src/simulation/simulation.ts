@@ -3,7 +3,7 @@ import carImg from "../sprites/car-truck3.png";
 import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
 import {bgHeight, bgWidth} from "../App";
 import {textStyle} from "styled-system";
-import {Dot} from "./pathParser";
+import {Dot, SimulationObjects} from "./pathParser";
 
 interface SimCar {
     sprite: PIXI.Sprite,
@@ -14,7 +14,7 @@ interface SimCar {
     radius: number
 }
 
-export function createApp(path: Dot[]): PIXI.Application {
+export function createApp(simulationObjects: SimulationObjects): PIXI.Application {
     const app = new PIXI.Application({
         height: bgHeight,
         width: bgWidth,
@@ -25,12 +25,12 @@ export function createApp(path: Dot[]): PIXI.Application {
     const bgSprite = PIXI.Sprite.from(bgImg);
     app.stage.addChild(bgSprite);
 
-    const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
-    pointsGraphic.lineStyle(2, 0xFFFFFF, 1);
-    console.log(path);
-    path.forEach((point) => pointsGraphic.drawCircle(point.x, point.y, 5));
-    app.stage.addChild(pointsGraphic);
-
+    simulationObjects.streets.forEach((street) => {
+        const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
+        pointsGraphic.lineStyle(2, 0xFFFFFF, 1);
+        street.dots.forEach((point) => pointsGraphic.drawCircle(point.x, point.y, 5));
+        app.stage.addChild(pointsGraphic);
+    });
 
     const cx = app.screen.width / 2;
     const cy = app.screen.height / 2;
