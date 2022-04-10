@@ -45,7 +45,7 @@ export function parsePath(pathDescription: String): Dot[] {
         //point distribution in bezier curves is not linear.
         //Normalize point distribution to have equal distance between all points
         if (points.length > 0) {
-            const dist = 5;
+            const dist = 1;
             let i = 0;
             let normalizedPoints = [];
             let neededDist = dist;
