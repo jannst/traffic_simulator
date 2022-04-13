@@ -11,15 +11,16 @@ export interface SimCar {
     street: Street,
     dotIndex: number,
     pxPerTick: number,
-    garbage: boolean
+    garbage: boolean,
+    checkCollisions: boolean
 }
 
 export function initCars(app: Application, simulation: SimulationObjects) {
 
     const textures = [
-        PIXI.Texture.from(carImg1),
-        PIXI.Texture.from(carImg2),
-        PIXI.Texture.from(carImg3),
+        //PIXI.Texture.from(carImg1),
+        //PIXI.Texture.from(carImg2),
+        //PIXI.Texture.from(carImg3),
         PIXI.Texture.from(carImg4)
     ];
     const carSpriteScale = .5;
@@ -33,6 +34,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         const street = simulation.streets[Math.floor(Math.random() * simulation.streets.length)];
         const car: SimCar = {
             pxPerTick: 1.5,
+            checkCollisions: false,
             street: street,
             dotIndex: 0,
             sprite: new PIXI.Sprite(textures[Math.floor(Math.random() * textures.length)]),
@@ -75,7 +77,59 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         return true;
     }
 
+    function rotate(reference: Dot, target: Dot, angle: number): Dot {
+        const oldX = target.x - reference.x;//-target.x;
+        const oldY = target.y - reference.y;//-target.y;
+        const newX = oldX * Math.cos(angle) - oldY * Math.sin(angle);
+        const newY = oldX * Math.sin(angle) + oldY * Math.cos(angle);
+        return {x: reference.x + newX, y: reference.y + newY};
+    }
+
+    const DISTANCE_CHECK_THRESHOLD = 60;
+
     function trySetPosition(car: SimCar, position: Dot) {
+        if (car.street.dots[car.dotIndex].checkForCollisions) {
+            car.checkCollisions = true
+            const halfWidth = car.sprite.width / 2;
+            const halfHeight = car.sprite.height / 2;
+            const tl = rotate(car.sprite, {
+                x: position.x + halfWidth,
+                y: position.y + halfHeight
+            }, position.rotation ?? car.sprite.rotation);
+            const tr = rotate(car.sprite, {
+                x: position.x + halfWidth,
+                y: position.y - halfHeight
+            }, position.rotation ?? car.sprite.rotation);
+            const ll = rotate(car.sprite, {
+                x: position.x - halfWidth,
+                y: position.y + halfHeight
+            }, position.rotation ?? car.sprite.rotation);
+            const lr = rotate(car.sprite, {
+                x: position.x - halfWidth,
+                y: position.y - halfHeight
+            }, position.rotation ?? car.sprite.rotation);
+
+            const possibleColl = cars.filter((c) => c.checkCollisions &&
+                !c.garbage &&
+                c !== car &&
+                distance(position, c.sprite) < DISTANCE_CHECK_THRESHOLD
+            ).length > 0;
+            const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
+            pointsGraphic.lineStyle(2, possibleColl ? 0xaa0044 : 0xFFFFFF, 1);
+            pointsGraphic.drawCircle(position.x, position.y, DISTANCE_CHECK_THRESHOLD/2);
+            pointsGraphic.drawCircle(tl.x, tl.y, 2);
+            pointsGraphic.drawCircle(tr.x, tr.y, 2);
+            pointsGraphic.drawCircle(ll.x, ll.y, 2);
+            pointsGraphic.drawCircle(lr.x, lr.y, 2);
+            //pointsGraphic.drawShape(car.sprite.getBounds());
+            app.stage.addChild(pointsGraphic);
+            setTimeout(() => {
+                app.stage.removeChild(pointsGraphic);
+                pointsGraphic.destroy();
+            }, 10);
+        } else {
+            car.checkCollisions = false
+        }
         //console.log(position);
         car.sprite.x = position.x;
         car.sprite.y = position.y;

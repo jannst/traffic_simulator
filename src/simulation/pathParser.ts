@@ -50,26 +50,29 @@ function findStreetIntersections(streets: Street[]) {
     //console.log(`Street intersection calculations. Number of operations: ${(numLines * 2) ** 2}`);
     //N = street.map((street) => street.dots.lengt).sum
     //we dont need the exact interection points, because we have complexity O()
-    const minDist = 35;
+    const minDist = 40;
+    const lookahead = 3;
     for (let i = 0; i < streets.length; i++) {
         const dots = streets[i].dots;
         for (let j = 0; j < dots.length; j++) {
-            const dot = dots[j];
+            //const dot = dots[j];
             dance:
-                if (!dots[j].checkForCollisions) {
+                //if (!dots[j].checkForCollisions) {
                     for (let k = 0; k < streets.length; k++) {
                         //do not check for points on same street
                         if (k === i) continue;
                         const checkDots = streets[k].dots;
                         for (let l = 0; l < checkDots.length; l++) {
-                            if (distanceSmallerThan(dot, checkDots[l], minDist)) {
-                                dot.checkForCollisions = true;
-                                checkDots[l].checkForCollisions = true;
+                            if (distanceSmallerThan(dots[j], checkDots[l], minDist)) {
+                                for(let m = Math.max(j-lookahead, 0); m < Math.min(j+lookahead, dots.length); m++) {
+                                    dots[m].checkForCollisions = true
+                                }
+                                //checkDots[l].checkForCollisions = true;
                                 break dance;
                             }
                         }
                     }
-                }
+                //}
         }
     }
 }
@@ -192,15 +195,16 @@ export function distanceSmallerThan(a: Dot, b: Dot, distance: number) {
         if (rotDiff < ANGLE_THRESHOLD || rotDiff > Math.PI - ANGLE_THRESHOLD) {
             distance = distance / 2;
         }
-        return Math.abs(Math.hypot(diffX, diffY)) < distance;
+        return Math.hypot(diffX, diffY) < distance;
     }
 }
 
 export function distance(a: Dot, b: Dot) {
     const diffX = a.x - b.x;
     const diffY = a.y - b.y;
-    return Math.abs(Math.hypot(diffX, diffY));
+    return Math.hypot(diffX, diffY);
 }
+
 
 //source: http://jsfiddle.net/m1erickson/LumMX/
 // quadratic bezier: percent is 0-1
