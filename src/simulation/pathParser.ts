@@ -26,7 +26,7 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
     let items = xmlDoc.getElementsByTagName("g");
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if(item.style.display === "none") {
+        if (item.style.display === "none") {
             continue;
         }
         const attributes = (item.getAttribute("inkscape:label") ?? "").split(";");
@@ -41,14 +41,13 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
         }
     }
     findStreetIntersections(streets);
-    console.log(streets);
     return {streets: streets};
 }
 
 function findStreetIntersections(streets: Street[]) {
-    let increment = 30 / DIST_BETWEEN_POINTS;
-    let numLines = streets.map((street) => (street.dots.length / increment) - 1).reduce((a, b) => a + b, 0);
-    console.log(`Street intersection calculations. Number of operations: ${(numLines * 2) ** 2}`);
+    //let increment = 30 / DIST_BETWEEN_POINTS;
+    //let numLines = streets.map((street) => (street.dots.length / increment) - 1).reduce((a, b) => a + b, 0);
+    //console.log(`Street intersection calculations. Number of operations: ${(numLines * 2) ** 2}`);
     //N = street.map((street) => street.dots.lengt).sum
     //we dont need the exact interection points, because we have complexity O()
     const minDist = 35;
@@ -95,12 +94,22 @@ function parsePath(pathDescription: String): Dot[] {
         //expand the bezier curves to more points
         for (; index < commands.length; index++) {
             let cmd = commands[index];
-            if (cmd.code === "c") {
-                const endPoint = {x: currentPosition.x + cmd.x, y: currentPosition.y + cmd.y};
+            if (cmd.command === "curveto") {
+                let endPoint, ctrlPt1, ctrlPt2;
+
+                if (cmd.relative) {
+                    ctrlPt1 = {x: cmd.x1 + currentPosition.x, y: cmd.y1 + currentPosition.y};
+                    ctrlPt2 = {x: cmd.x2 + currentPosition.x, y: cmd.y2 + currentPosition.y};
+                    endPoint = {x: currentPosition.x + cmd.x, y: currentPosition.y + cmd.y};
+                } else {
+                    ctrlPt1 = {x: cmd.x1, y: cmd.y1};
+                    ctrlPt2 = {x: cmd.x2, y: cmd.y2};
+                    endPoint = {x: cmd.x, y: cmd.y};
+                }
                 for (let j = 0; j < 100; j += 10) {
                     points.push(getCubicBezierXYatPercent(currentPosition,
-                        {x: cmd.x1 + currentPosition.x, y: cmd.y1 + currentPosition.y},
-                        {x: cmd.x2 + currentPosition.x, y: cmd.y2 + currentPosition.y},
+                        ctrlPt1,
+                        ctrlPt2,
                         endPoint,
                         j / 100));
                 }
@@ -132,7 +141,7 @@ function parsePath(pathDescription: String): Dot[] {
                 } else if (distToNext > neededDist) {
                     let distScale = 1 / (distToNext / neededDist);
                     //will also calculate rotation
-                    curPoint = pointBetween(curPoint, points[i + 1], distScale);
+                    curPoint = pointBetweenWithAngle(curPoint, points[i + 1], distScale);
                     neededDist = DIST_BETWEEN_POINTS;
                     normalizedPoints.push(curPoint);
                 } else {
@@ -162,10 +171,17 @@ function getRotFromDiff(diffX: number, diffY: number) {
 export function pointBetween(a: Dot, b: Dot, scale: number): Dot {
     const diffX = (a.x - b.x) * scale;
     const diffY = (a.y - b.y) * scale;
+    return {x: a.x - diffX, y: a.y - diffY, rotation: a.rotation};
+}
+
+export function pointBetweenWithAngle(a: Dot, b: Dot, scale: number): Dot {
+    const diffX = (a.x - b.x) * scale;
+    const diffY = (a.y - b.y) * scale;
     return {x: a.x - diffX, y: a.y - diffY, rotation: getRotFromDiff(diffX, diffY)};
 }
 
 const ANGLE_THRESHOLD = Math.PI / 8
+
 export function distanceSmallerThan(a: Dot, b: Dot, distance: number) {
     const diffX = a.x - b.x;
     const diffY = a.y - b.y;
@@ -173,9 +189,8 @@ export function distanceSmallerThan(a: Dot, b: Dot, distance: number) {
         return false;
     } else {
         const rotDiff = Math.abs((a.rotation ?? 0 % Math.PI) - (b.rotation ?? 0 % Math.PI)) % Math.PI;
-        console.log(rotDiff);
-        if(rotDiff < ANGLE_THRESHOLD || rotDiff > Math.PI - ANGLE_THRESHOLD) {
-            distance = distance/2;
+        if (rotDiff < ANGLE_THRESHOLD || rotDiff > Math.PI - ANGLE_THRESHOLD) {
+            distance = distance / 2;
         }
         return Math.abs(Math.hypot(diffX, diffY)) < distance;
     }

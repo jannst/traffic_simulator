@@ -75,6 +75,15 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         return true;
     }
 
+    function trySetPosition(car: SimCar, position: Dot) {
+        //console.log(position);
+        car.sprite.x = position.x;
+        car.sprite.y = position.y;
+        if (position.rotation) {
+            car.sprite.rotation = position.rotation;
+        }
+    }
+
 
     app.ticker.add((delta) => {
         //generate new cars
@@ -95,35 +104,40 @@ export function initCars(app: Application, simulation: SimulationObjects) {
             if (car.dotIndex < car.street.dots.length - 1) {
                 const distToTravel = car.pxPerTick * delta;
                 let dist = 0;
-                let distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
+                let tmpDot: Dot = {x: car.sprite.x, y: car.sprite.y};
+                let distToNext = distance(tmpDot, car.street.dots[car.dotIndex + 1]);
                 while (dist < distToTravel) {
                     if (distToNext < distToTravel) {
                         dist += distToNext;
                         if (!incrementDotIndex(car)) {
                             break;
                         }
-                        car.sprite.x = car.street.dots[car.dotIndex].x;
-                        car.sprite.y = car.street.dots[car.dotIndex].y;
-                        if (car.street.dots[car.dotIndex].rotation) {
-                            car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
-                        }
-                        distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
+                        tmpDot = car.street.dots[car.dotIndex]
+                        //console.log(tmpDot);
+                        //car.sprite.x = car.street.dots[car.dotIndex].x;
+                        //car.sprite.y = car.street.dots[car.dotIndex].y;
+                        //if (car.street.dots[car.dotIndex].rotation) {
+                        //    car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
+                        //}
+                        distToNext = distance(tmpDot, car.street.dots[car.dotIndex + 1]);
                     } else if (distToNext > distToTravel) {
                         let distScale = 1 / (distToNext / distToTravel);
-                        const newPt = pointBetween(car.sprite, car.street.dots[car.dotIndex + 1], distScale);
-                        car.sprite.x = newPt.x;
-                        car.sprite.y = newPt.y;
-                        //car.sprite.rotation = getRotation(car.sprite, car.street.dots[car.dotIndex + 1]);
+                        tmpDot = pointBetween(tmpDot, car.street.dots[car.dotIndex + 1], distScale);
+                        trySetPosition(car, tmpDot)
+                        //car.sprite.x = newPt.x;
+                        //car.sprite.y = newPt.y;
                         break;
                     } else {
                         if (!incrementDotIndex(car)) {
                             break;
                         }
-                        car.sprite.x = car.street.dots[car.dotIndex].x;
-                        car.sprite.y = car.street.dots[car.dotIndex].y;
-                        if (car.street.dots[car.dotIndex].rotation) {
-                            car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
-                        }
+                        tmpDot = car.street.dots[car.dotIndex];
+                        trySetPosition(car, tmpDot)
+                        //car.sprite.x = car.street.dots[car.dotIndex].x;
+                        //car.sprite.y = car.street.dots[car.dotIndex].y;
+                        //if (car.street.dots[car.dotIndex].rotation) {
+                        //    car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
+                        //}
                         break;
                     }
                 }
