@@ -19,8 +19,11 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
 
     simulationObjects.streets.forEach((street) => {
         const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
-        pointsGraphic.lineStyle(2, 0xFFFFFF, 1);
-        street.dots.forEach((point) => pointsGraphic.drawCircle(point.x, point.y, 5));
+        street.dots.forEach((point) => {
+                pointsGraphic.lineStyle(1, point.checkForCollisions ? 0xFF0000 : 0xFFFFFF, 1);
+                pointsGraphic.drawCircle(point.x, point.y, 1);
+            }
+        );
         app.stage.addChild(pointsGraphic);
     });
 
@@ -59,7 +62,6 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
     });
 
      */
-
 
 
     /*

@@ -1,12 +1,9 @@
 import React, {useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import './App.css';
-import car1 from "./sprites/car-truck1.png";
-import bg from "./Haw_Porsche_Center_Google_Earth.png";
-import {useWindowDimensions} from "./useWindowDimensions";
 import {Box, Flex} from "./Layout";
 import {SimulationWrapper} from "./simulationWrapper";
 import {createApp} from "./simulation/simulation";
-import {loadSimulationObjectsFromSvg, parsePath, SimulationObjects} from "./simulation/pathParser";
+import {loadSimulationObjectsFromSvg, SimulationObjects} from "./simulation/pathParser";
 import {Application} from "pixi.js";
 
 export const bgWidth = 1756;

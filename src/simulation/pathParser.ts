@@ -4,7 +4,9 @@ const parseSVG = require('svg-path-parser');
 
 export interface Dot {
     x: number,
-    y: number
+    y: number,
+    checkForCollisions?: boolean,
+    rotation?: number
 }
 
 export interface SimulationObjects {
@@ -24,6 +26,9 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
     let items = xmlDoc.getElementsByTagName("g");
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        if(item.style.display === "none") {
+            continue;
+        }
         const attributes = (item.getAttribute("inkscape:label") ?? "").split(";");
         if (attributes.length >= 1 && attributes[0] === "S") {
             const itemPaths = item.getElementsByTagName("path");
@@ -35,10 +40,45 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
             console.log("loaded street: " + item.getAttribute("inkscape:label"));
         }
     }
+    findStreetIntersections(streets);
+    console.log(streets);
     return {streets: streets};
 }
 
-export function parsePath(pathDescription: String): Dot[] {
+function findStreetIntersections(streets: Street[]) {
+    let increment = 30 / DIST_BETWEEN_POINTS;
+    let numLines = streets.map((street) => (street.dots.length / increment) - 1).reduce((a, b) => a + b, 0);
+    console.log(`Street intersection calculations. Number of operations: ${(numLines * 2) ** 2}`);
+    //N = street.map((street) => street.dots.lengt).sum
+    //we dont need the exact interection points, because we have complexity O()
+    const minDist = 35;
+    for (let i = 0; i < streets.length; i++) {
+        const dots = streets[i].dots;
+        for (let j = 0; j < dots.length; j++) {
+            const dot = dots[j];
+            dance:
+                if (!dots[j].checkForCollisions) {
+                    for (let k = 0; k < streets.length; k++) {
+                        //do not check for points on same street
+                        if (k === i) continue;
+                        const checkDots = streets[k].dots;
+                        for (let l = 0; l < checkDots.length; l++) {
+                            if (distanceSmallerThan(dot, checkDots[l], minDist)) {
+                                dot.checkForCollisions = true;
+                                checkDots[l].checkForCollisions = true;
+                                break dance;
+                            }
+                        }
+                    }
+                }
+        }
+    }
+}
+
+//this variable controls the distance between the equally distributed points
+const DIST_BETWEEN_POINTS = 10;
+
+function parsePath(pathDescription: String): Dot[] {
     const commands: Command[] = parseSVG(pathDescription);
     let points: Dot[] = [];
     let currentPosition: Dot = {x: 0, y: 0};
@@ -74,16 +114,15 @@ export function parsePath(pathDescription: String): Dot[] {
 
         //point distribution in bezier curves is not linear.
         //Normalize point distribution to have equal distance between all points
-        if (points.length > 0) {
-            //this variable controls the distance between the equally distributed points
-            const dist = 7;
+        if (points.length > 2) {
             let i = 0;
             let normalizedPoints = [];
-            let neededDist = dist;
+            let neededDist = DIST_BETWEEN_POINTS;
             let curPoint = points[i]
 
             //starting point
-            normalizedPoints.push(points[i]);
+            //Bug: rotaton relative to points[i + 1] yield weird results, use points[i + 2] for as reference for now
+            normalizedPoints.push(getPointWithRotation(points[i], points[i + 2]));
             while (i < points.length - 1) {
                 const distToNext = distance(curPoint, points[i + 1])
                 if (distToNext < neededDist) {
@@ -92,13 +131,14 @@ export function parsePath(pathDescription: String): Dot[] {
                     i++;
                 } else if (distToNext > neededDist) {
                     let distScale = 1 / (distToNext / neededDist);
+                    //will also calculate rotation
                     curPoint = pointBetween(curPoint, points[i + 1], distScale);
-                    neededDist = dist;
+                    neededDist = DIST_BETWEEN_POINTS;
                     normalizedPoints.push(curPoint);
                 } else {
-                    curPoint = points[i + 1];
+                    curPoint = getPointWithRotation(points[i + 1], points[i], true);
                     normalizedPoints.push(curPoint);
-                    neededDist = dist;
+                    neededDist = DIST_BETWEEN_POINTS;
                     i++;
                 }
             }
@@ -109,10 +149,36 @@ export function parsePath(pathDescription: String): Dot[] {
 
 }
 
+function getPointWithRotation(dot: Dot, rotationReference: Dot, invert: boolean = false): Dot {
+    const diffX = dot.x - rotationReference.x;
+    const diffY = dot.y - rotationReference.y;
+    return {x: dot.x, y: dot.y, rotation: (getRotFromDiff(diffX, diffY) + (invert ? Math.PI : 0)) % (2 * Math.PI)};
+}
+
+function getRotFromDiff(diffX: number, diffY: number) {
+    return Math.atan2(diffY, diffX) + (Math.PI * 1.5) % (2 * Math.PI);
+}
+
 export function pointBetween(a: Dot, b: Dot, scale: number): Dot {
     const diffX = (a.x - b.x) * scale;
     const diffY = (a.y - b.y) * scale;
-    return {x: a.x - diffX, y: a.y - diffY};
+    return {x: a.x - diffX, y: a.y - diffY, rotation: getRotFromDiff(diffX, diffY)};
+}
+
+const ANGLE_THRESHOLD = Math.PI / 8
+export function distanceSmallerThan(a: Dot, b: Dot, distance: number) {
+    const diffX = a.x - b.x;
+    const diffY = a.y - b.y;
+    if (Math.abs(diffX) + Math.abs(diffY) > distance) {
+        return false;
+    } else {
+        const rotDiff = Math.abs((a.rotation ?? 0 % Math.PI) - (b.rotation ?? 0 % Math.PI)) % Math.PI;
+        console.log(rotDiff);
+        if(rotDiff < ANGLE_THRESHOLD || rotDiff > Math.PI - ANGLE_THRESHOLD) {
+            distance = distance/2;
+        }
+        return Math.abs(Math.hypot(diffX, diffY)) < distance;
+    }
 }
 
 export function distance(a: Dot, b: Dot) {

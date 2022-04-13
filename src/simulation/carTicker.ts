@@ -25,7 +25,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     const carSpriteScale = .5;
 
     let cars: SimCar[] = [];
-    const spawnCarEveryXTicks = 60 * 3;
+    const spawnCarEveryXTicks = 60 * 2;
     let ticksPassed = spawnCarEveryXTicks + 1;
 
     function spawnCar() {
@@ -40,6 +40,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         };
         car.sprite.x = street.dots[0]!.x;
         car.sprite.y = street.dots[0]!.y;
+        car.sprite.rotation = street.dots[0]!.rotation ?? 0;
         car.sprite.pivot.x = car.sprite.width / 2;
         car.sprite.pivot.y = car.sprite.height / 2;
         car.sprite.scale.x = carSpriteScale;
@@ -74,16 +75,10 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         return true;
     }
 
-    function getRoation(a: Dot, b: Dot) {
-        const diffX = a.x - b.x;
-        const diffY = a.y - b.y;
-        return Math.atan2(diffY, diffX) + Math.PI * 1.5;
-        //return (Math.asin(diffY/ Math.hypot(diffX, diffY)))+Math.PI*1.5;
-    }
 
     app.ticker.add((delta) => {
         //generate new cars
-        if (ticksPassed + Math.random() * 200 > spawnCarEveryXTicks) {
+        if (ticksPassed + Math.random() * 100 > spawnCarEveryXTicks) {
             ticksPassed = 0;
             //garbage collect old cars
             cars = cars.filter(car => !car.garbage);
@@ -109,14 +104,16 @@ export function initCars(app: Application, simulation: SimulationObjects) {
                         }
                         car.sprite.x = car.street.dots[car.dotIndex].x;
                         car.sprite.y = car.street.dots[car.dotIndex].y;
-                        car.sprite.rotation = getRoation(car.sprite, car.street.dots[car.dotIndex + 1]);
+                        if (car.street.dots[car.dotIndex].rotation) {
+                            car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
+                        }
                         distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
                     } else if (distToNext > distToTravel) {
                         let distScale = 1 / (distToNext / distToTravel);
                         const newPt = pointBetween(car.sprite, car.street.dots[car.dotIndex + 1], distScale);
                         car.sprite.x = newPt.x;
                         car.sprite.y = newPt.y;
-                        car.sprite.rotation = getRoation(car.sprite, car.street.dots[car.dotIndex + 1]);
+                        //car.sprite.rotation = getRotation(car.sprite, car.street.dots[car.dotIndex + 1]);
                         break;
                     } else {
                         if (!incrementDotIndex(car)) {
@@ -124,7 +121,9 @@ export function initCars(app: Application, simulation: SimulationObjects) {
                         }
                         car.sprite.x = car.street.dots[car.dotIndex].x;
                         car.sprite.y = car.street.dots[car.dotIndex].y;
-                        car.sprite.rotation = getRoation(car.sprite, car.street.dots[car.dotIndex + 1]);
+                        if (car.street.dots[car.dotIndex].rotation) {
+                            car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
+                        }
                         break;
                     }
                 }
