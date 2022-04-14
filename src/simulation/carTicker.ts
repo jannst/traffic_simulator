@@ -1,5 +1,5 @@
 import {Application} from "pixi.js";
-import {distance, Dot, pointBetween, SimulationObjects, Street} from "./pathParser";
+import {distance, Dot, getAngleBetween, pointBetween, SimulationObjects, Street} from "./pathParser";
 import * as PIXI from "pixi.js";
 import carImg1 from "../sprites/car-truck1.png";
 import carImg2 from "../sprites/car-truck2.png";
@@ -14,7 +14,8 @@ export interface SimCar {
     dotIndex: number,
     pxPerTick: number,
     garbage: boolean,
-    checkCollisions: boolean
+    checkCollisions: boolean,
+    mustWait?: boolean
 }
 
 export function initCars(app: Application, simulation: SimulationObjects) {
@@ -30,12 +31,11 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     let cars: SimCar[] = [];
     let carsByStreet: { [key: string]: SimCar[] } = {};
     simulation.streets.forEach((street) => carsByStreet[street.name] = []);
-    const spawnCarEveryXTicks = 60 * 2;
+    const spawnCarEveryXTicks = 60 * 1;
     let ticksPassed = spawnCarEveryXTicks + 1;
 
 
     function spawnCar(): boolean {
-        console.log("spawn car");
         const street = simulation.streets[Math.floor(Math.random() * simulation.streets.length)];
         const car: SimCar = {
             pxPerTick: 1.5,
@@ -111,9 +111,24 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         return [reference.x + newX, reference.y + newY];
     }
 
+    function getFrontDot(car: SimCar, position?: Dot): Dot {
+        if (!position) {
+            position = car.sprite;
+        }
+        const frontPoint = rotate(car.sprite, {
+            x: position.x,
+            y: position.y - car.sprite.height / 2
+        }, position.rotation ?? car.sprite.rotation);
+        return {
+            x: frontPoint[0],
+            y: frontPoint[1],
+            rotation: position.rotation ?? car.sprite.rotation
+        };
+    }
+
     function boundingPoints(car: SimCar, position: Dot): number[] {
-        const halfWidth = car.sprite.width / 2;
-        const halfHeight = car.sprite.height / 2;
+        const halfWidth = car.sprite.width / 2 + 5;
+        const halfHeight = car.sprite.height / 2 + 5;
         return [...rotate(car.sprite, {
             x: position.x + halfWidth,
             y: position.y + halfHeight
@@ -135,6 +150,10 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     const DISTANCE_CHECK_THRESHOLD = 60;
 
     function trySetPosition(car: SimCar, position: Dot): boolean {
+        if (car.mustWait) {
+            car.mustWait = false;
+            return false;
+        }
         const carIndexInStreet = carsByStreet[car.street.name].indexOf(car);
         //in this case, there is another car before the current car
         if (carsByStreet[car.street.name].length - 1 > carIndexInStreet) {
@@ -147,28 +166,46 @@ export function initCars(app: Application, simulation: SimulationObjects) {
 
             const collisionCandidates: SimCar[] = cars.filter((c) => c.checkCollisions &&
                 !c.garbage &&
-                c !== car
+                c !== car &&
+                c.street !== car.street
             );
             let collision = false;
-            const carBounds = boundingPoints(car, position);
             if (collisionCandidates.length) {
+                const carBounds = boundingPoints(car, position);
+                const frontDot: Dot = getFrontDot(car, position)
                 for (let i = 0; i < collisionCandidates.length; i++) {
                     if (distance(position, collisionCandidates[i].sprite) < DISTANCE_CHECK_THRESHOLD &&
                         intersects.polygonPolygon(carBounds, boundingPoints(collisionCandidates[i], collisionCandidates[i].sprite))
                     ) {
                         collision = true;
-                        /*
+
+                        const angleCarRelToOther = Math.abs(getAngleBetween(frontDot, collisionCandidates[i].sprite) - frontDot.rotation!);
+                        const otherFrontDot = getFrontDot(collisionCandidates[i])
+                        const angleOtherRelToCar = Math.abs(getAngleBetween(otherFrontDot, position) - otherFrontDot.rotation!);
+                        if(angleCarRelToOther > 0.4*Math.PI) {
+                            continue;
+                        }
+                        if (angleCarRelToOther < angleOtherRelToCar) {
+                            return false;
+                        } else {
+                            if (cars.indexOf(collisionCandidates[i]) > cars.indexOf(car)) {
+                                collisionCandidates[i].mustWait = true;
+                            }
+                            break;
+                        }
+                        //if(angle > -Math.PI/2 && angle < Math.PI/2) {
+                        //    return false;
+                        //}
                         const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
                         pointsGraphic.lineStyle(2, collision ? 0xaa0044 : 0xFFFFFF, 1);
-                        pointsGraphic.drawCircle(position.x, position.y, DISTANCE_CHECK_THRESHOLD / 2);
-                        pointsGraphic.drawPolygon(carBounds);
+                        pointsGraphic.drawCircle(frontDot.x, frontDot.y, 2);
+                        //pointsGraphic.drawPolygon(carBounds);
                         app.stage.addChild(pointsGraphic);
                         setTimeout(() => {
                             app.stage.removeChild(pointsGraphic);
                             pointsGraphic.destroy();
                         }, 10);
-                         */
-                        return false;
+
                     }
                 }
             }
@@ -201,7 +238,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
                 return;
             }
             if (car.dotIndex < car.street.dots.length - 1) {
-                const distToTravel = car.pxPerTick * delta;
+                const distToTravel = car.pxPerTick ;//* delta;
                 let dist = 0;
                 let distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
                 while (dist < distToTravel) {

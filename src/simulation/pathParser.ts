@@ -167,8 +167,14 @@ function getPointWithRotation(dot: Dot, rotationReference: Dot, invert: boolean 
     return {x: dot.x, y: dot.y, rotation: (getRotFromDiff(diffX, diffY) + (invert ? Math.PI : 0)) % (2 * Math.PI)};
 }
 
+export function getAngleBetween(a: Dot, b: Dot) {
+    const diffX = a.x - b.x;
+    const diffY = a.y - b.y;
+    return getRotFromDiff(diffX, diffY);
+}
+
 function getRotFromDiff(diffX: number, diffY: number) {
-    return Math.atan2(diffY, diffX) + (Math.PI * 1.5) % (2 * Math.PI);
+    return Math.abs(Math.atan2(diffY, diffX) + (Math.PI * 1.5) % (2 * Math.PI));
 }
 
 export function pointBetween(a: Dot, b: Dot, scale: number): Dot {
