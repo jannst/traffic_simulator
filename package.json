@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@types/intersects": "^2.5.0",
     "@types/node": "^16.11.26",
     "@types/pixi.js": "^5.0.0",
     "@types/react": "^17.0.44",

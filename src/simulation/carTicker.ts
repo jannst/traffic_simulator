@@ -6,6 +6,8 @@ import carImg2 from "../sprites/car-truck2.png";
 import carImg3 from "../sprites/car-truck3.png";
 import carImg4 from "../sprites/car-truck4.png";
 
+const intersects = require('intersects');
+
 export interface SimCar {
     sprite: PIXI.Sprite,
     street: Street,
@@ -18,18 +20,21 @@ export interface SimCar {
 export function initCars(app: Application, simulation: SimulationObjects) {
 
     const textures = [
-        //PIXI.Texture.from(carImg1),
-        //PIXI.Texture.from(carImg2),
-        //PIXI.Texture.from(carImg3),
+        PIXI.Texture.from(carImg1),
+        PIXI.Texture.from(carImg2),
+        PIXI.Texture.from(carImg3),
         PIXI.Texture.from(carImg4)
     ];
     const carSpriteScale = .5;
 
     let cars: SimCar[] = [];
+    let carsByStreet: { [key: string]: SimCar[] } = {};
+    simulation.streets.forEach((street) => carsByStreet[street.name] = []);
     const spawnCarEveryXTicks = 60 * 2;
     let ticksPassed = spawnCarEveryXTicks + 1;
 
-    function spawnCar() {
+
+    function spawnCar(): boolean {
         console.log("spawn car");
         const street = simulation.streets[Math.floor(Math.random() * simulation.streets.length)];
         const car: SimCar = {
@@ -47,8 +52,26 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         car.sprite.pivot.y = car.sprite.height / 2;
         car.sprite.scale.x = carSpriteScale;
         car.sprite.scale.y = carSpriteScale;
-        cars.push(car);
-        app.stage.addChild(car.sprite);
+
+        if (carsByStreet[street.name].length === 0 || enoughDistanceBetween(car, carsByStreet[street.name][0])) {
+            cars.push(car);
+            carsByStreet[street.name] = [car, ...carsByStreet[street.name]];
+            app.stage.addChild(car.sprite);
+            return true;
+        }
+        return false;
+    }
+
+    //the minimum distance beween 2 cars on the same lane. Anything more close is considered as a collision
+    const SAME_LANE_MIN_DISTANCE = 5;
+
+    function enoughDistanceBetween(a: SimCar, b: SimCar): boolean {
+        //garbage cars are not rendered anymore, therefore can not collide
+        if (a.garbage || b.garbage) return true;
+        //take half height because positioning reference is at the center of the sprites
+        const aHeight = a.sprite.height / 2;
+        const bHeight = b.sprite.height / 2;
+        return distance(a.sprite, b.sprite) >= aHeight + bHeight + SAME_LANE_MIN_DISTANCE;
     }
 
 
@@ -68,74 +91,96 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     //})
 
     function incrementDotIndex(car: SimCar): boolean {
-        car.dotIndex++;
-        if (car.dotIndex >= car.street.dots.length - 1) {
+        //car.dotIndex++;
+        if (car.dotIndex >= car.street.dots.length - 2) {
             car.garbage = true;
             car.sprite.destroy();
             return false;
+        } else if (trySetPosition(car, car.street.dots[car.dotIndex + 1])) {
+            car.dotIndex++;
+            return true;
         }
-        return true;
+        return false;
     }
 
-    function rotate(reference: Dot, target: Dot, angle: number): Dot {
+    function rotate(reference: Dot, target: Dot, angle: number): number[] {
         const oldX = target.x - reference.x;//-target.x;
         const oldY = target.y - reference.y;//-target.y;
         const newX = oldX * Math.cos(angle) - oldY * Math.sin(angle);
         const newY = oldX * Math.sin(angle) + oldY * Math.cos(angle);
-        return {x: reference.x + newX, y: reference.y + newY};
+        return [reference.x + newX, reference.y + newY];
+    }
+
+    function boundingPoints(car: SimCar, position: Dot): number[] {
+        const halfWidth = car.sprite.width / 2;
+        const halfHeight = car.sprite.height / 2;
+        return [...rotate(car.sprite, {
+            x: position.x + halfWidth,
+            y: position.y + halfHeight
+        }, position.rotation ?? car.sprite.rotation),
+            ...rotate(car.sprite, {
+                x: position.x + halfWidth,
+                y: position.y - halfHeight
+            }, position.rotation ?? car.sprite.rotation),
+            ...rotate(car.sprite, {
+                x: position.x - halfWidth,
+                y: position.y - halfHeight
+            }, position.rotation ?? car.sprite.rotation),
+            ...rotate(car.sprite, {
+                x: position.x - halfWidth,
+                y: position.y + halfHeight
+            }, position.rotation ?? car.sprite.rotation)];
     }
 
     const DISTANCE_CHECK_THRESHOLD = 60;
 
-    function trySetPosition(car: SimCar, position: Dot) {
-        if (car.street.dots[car.dotIndex].checkForCollisions) {
+    function trySetPosition(car: SimCar, position: Dot): boolean {
+        const carIndexInStreet = carsByStreet[car.street.name].indexOf(car);
+        //in this case, there is another car before the current car
+        if (carsByStreet[car.street.name].length - 1 > carIndexInStreet) {
+            if (!enoughDistanceBetween(car, carsByStreet[car.street.name][carIndexInStreet + 1])) {
+                return false;
+            }
+        }
+        if (position.checkForCollisions ?? car.street.dots[car.dotIndex].checkForCollisions) {
             car.checkCollisions = true
-            const halfWidth = car.sprite.width / 2;
-            const halfHeight = car.sprite.height / 2;
-            const tl = rotate(car.sprite, {
-                x: position.x + halfWidth,
-                y: position.y + halfHeight
-            }, position.rotation ?? car.sprite.rotation);
-            const tr = rotate(car.sprite, {
-                x: position.x + halfWidth,
-                y: position.y - halfHeight
-            }, position.rotation ?? car.sprite.rotation);
-            const ll = rotate(car.sprite, {
-                x: position.x - halfWidth,
-                y: position.y + halfHeight
-            }, position.rotation ?? car.sprite.rotation);
-            const lr = rotate(car.sprite, {
-                x: position.x - halfWidth,
-                y: position.y - halfHeight
-            }, position.rotation ?? car.sprite.rotation);
 
-            const possibleColl = cars.filter((c) => c.checkCollisions &&
+            const collisionCandidates: SimCar[] = cars.filter((c) => c.checkCollisions &&
                 !c.garbage &&
-                c !== car &&
-                distance(position, c.sprite) < DISTANCE_CHECK_THRESHOLD
-            ).length > 0;
-            const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
-            pointsGraphic.lineStyle(2, possibleColl ? 0xaa0044 : 0xFFFFFF, 1);
-            pointsGraphic.drawCircle(position.x, position.y, DISTANCE_CHECK_THRESHOLD/2);
-            pointsGraphic.drawCircle(tl.x, tl.y, 2);
-            pointsGraphic.drawCircle(tr.x, tr.y, 2);
-            pointsGraphic.drawCircle(ll.x, ll.y, 2);
-            pointsGraphic.drawCircle(lr.x, lr.y, 2);
-            //pointsGraphic.drawShape(car.sprite.getBounds());
-            app.stage.addChild(pointsGraphic);
-            setTimeout(() => {
-                app.stage.removeChild(pointsGraphic);
-                pointsGraphic.destroy();
-            }, 10);
+                c !== car
+            );
+            let collision = false;
+            const carBounds = boundingPoints(car, position);
+            if (collisionCandidates.length) {
+                for (let i = 0; i < collisionCandidates.length; i++) {
+                    if (distance(position, collisionCandidates[i].sprite) < DISTANCE_CHECK_THRESHOLD &&
+                        intersects.polygonPolygon(carBounds, boundingPoints(collisionCandidates[i], collisionCandidates[i].sprite))
+                    ) {
+                        collision = true;
+                        /*
+                        const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
+                        pointsGraphic.lineStyle(2, collision ? 0xaa0044 : 0xFFFFFF, 1);
+                        pointsGraphic.drawCircle(position.x, position.y, DISTANCE_CHECK_THRESHOLD / 2);
+                        pointsGraphic.drawPolygon(carBounds);
+                        app.stage.addChild(pointsGraphic);
+                        setTimeout(() => {
+                            app.stage.removeChild(pointsGraphic);
+                            pointsGraphic.destroy();
+                        }, 10);
+                         */
+                        return false;
+                    }
+                }
+            }
         } else {
             car.checkCollisions = false
         }
-        //console.log(position);
         car.sprite.x = position.x;
         car.sprite.y = position.y;
         if (position.rotation) {
             car.sprite.rotation = position.rotation;
         }
+        return true;
     }
 
 
@@ -158,40 +203,27 @@ export function initCars(app: Application, simulation: SimulationObjects) {
             if (car.dotIndex < car.street.dots.length - 1) {
                 const distToTravel = car.pxPerTick * delta;
                 let dist = 0;
-                let tmpDot: Dot = {x: car.sprite.x, y: car.sprite.y};
-                let distToNext = distance(tmpDot, car.street.dots[car.dotIndex + 1]);
+                let distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
                 while (dist < distToTravel) {
                     if (distToNext < distToTravel) {
                         dist += distToNext;
                         if (!incrementDotIndex(car)) {
                             break;
                         }
-                        tmpDot = car.street.dots[car.dotIndex]
+                        //tmpDot = car.street.dots[car.dotIndex]
                         //console.log(tmpDot);
                         //car.sprite.x = car.street.dots[car.dotIndex].x;
                         //car.sprite.y = car.street.dots[car.dotIndex].y;
                         //if (car.street.dots[car.dotIndex].rotation) {
                         //    car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
                         //}
-                        distToNext = distance(tmpDot, car.street.dots[car.dotIndex + 1]);
+                        distToNext = distance(car.sprite, car.street.dots[car.dotIndex + 1]);
                     } else if (distToNext > distToTravel) {
                         let distScale = 1 / (distToNext / distToTravel);
-                        tmpDot = pointBetween(tmpDot, car.street.dots[car.dotIndex + 1], distScale);
-                        trySetPosition(car, tmpDot)
-                        //car.sprite.x = newPt.x;
-                        //car.sprite.y = newPt.y;
+                        trySetPosition(car, pointBetween(car.sprite, car.street.dots[car.dotIndex + 1], distScale))
                         break;
                     } else {
-                        if (!incrementDotIndex(car)) {
-                            break;
-                        }
-                        tmpDot = car.street.dots[car.dotIndex];
-                        trySetPosition(car, tmpDot)
-                        //car.sprite.x = car.street.dots[car.dotIndex].x;
-                        //car.sprite.y = car.street.dots[car.dotIndex].y;
-                        //if (car.street.dots[car.dotIndex].rotation) {
-                        //    car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
-                        //}
+                        incrementDotIndex(car);
                         break;
                     }
                 }
