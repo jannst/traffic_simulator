@@ -5,18 +5,10 @@ import carImg1 from "../sprites/car-truck1.png";
 import carImg2 from "../sprites/car-truck2.png";
 import carImg3 from "../sprites/car-truck3.png";
 import carImg4 from "../sprites/car-truck4.png";
+import {Car, CarImpl} from "./car";
+import {Environment, EnvironmentImpl} from "./environment";
 
 const intersects = require('intersects');
-
-export interface SimCar {
-    sprite: PIXI.Sprite,
-    street: Street,
-    dotIndex: number,
-    pxPerTick: number,
-    garbage: boolean,
-    checkCollisions: boolean,
-    mustWait?: boolean
-}
 
 export function initCars(app: Application, simulation: SimulationObjects) {
 
@@ -28,23 +20,19 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     ];
     const carSpriteScale = .5;
 
-    let cars: SimCar[] = [];
-    let carsByStreet: { [key: string]: SimCar[] } = {};
-    simulation.streets.forEach((street) => carsByStreet[street.name] = []);
+    const environment: Environment = new EnvironmentImpl(simulation.streets);
+
+    //let cars: Car[] = [];
+    //let carsByStreet: { [key: string]: Car[] } = {};
+    //simulation.streets.forEach((street) => carsByStreet[street.name] = []);
     const spawnCarEveryXTicks = 60 * 1;
     let ticksPassed = spawnCarEveryXTicks + 1;
 
 
     function spawnCar(): boolean {
         const street = simulation.streets[Math.floor(Math.random() * simulation.streets.length)];
-        const car: SimCar = {
-            pxPerTick: 1.5,
-            checkCollisions: false,
-            street: street,
-            dotIndex: 0,
-            sprite: new PIXI.Sprite(textures[Math.floor(Math.random() * textures.length)]),
-            garbage: false
-        };
+        const sprite = new PIXI.Sprite(textures[Math.floor(Math.random() * textures.length)]);
+        const car: Car = new CarImpl(sprite, street);
         car.sprite.x = street.dots[0]!.x;
         car.sprite.y = street.dots[0]!.y;
         car.sprite.rotation = street.dots[0]!.rotation ?? 0;
@@ -53,7 +41,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         car.sprite.scale.x = carSpriteScale;
         car.sprite.scale.y = carSpriteScale;
 
-        if (carsByStreet[street.name].length === 0 || enoughDistanceBetween(car, carsByStreet[street.name][0])) {
+        if (carsByStreet[street.name].length === 0 || car.enoughDistanceBetween(carsByStreet[street.name][0])) {
             cars.push(car);
             carsByStreet[street.name] = [car, ...carsByStreet[street.name]];
             app.stage.addChild(car.sprite);
@@ -62,94 +50,17 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         return false;
     }
 
-    //the minimum distance beween 2 cars on the same lane. Anything more close is considered as a collision
-    const SAME_LANE_MIN_DISTANCE = 5;
-
-    function enoughDistanceBetween(a: SimCar, b: SimCar): boolean {
-        //garbage cars are not rendered anymore, therefore can not collide
-        if (a.garbage || b.garbage) return true;
-        //take half height because positioning reference is at the center of the sprites
-        const aHeight = a.sprite.height / 2;
-        const bHeight = b.sprite.height / 2;
-        return distance(a.sprite, b.sprite) >= aHeight + bHeight + SAME_LANE_MIN_DISTANCE;
-    }
 
 
-    /*
-        Array.apply(null, {length: 20} as any).map(() => {
-        return {
-            sprite: new PIXI.Sprite(texture),
-            cy: cy + Math.random() * 800 - 400,
-            cx: cx + Math.random() * 800 - 400,
-            currentAngle: 0,
-            angleStep: Math.random() * .1,
-            radius: 150 * Math.random()
-        };
 
-     */
 
-    //})
 
-    function incrementDotIndex(car: SimCar): boolean {
-        //car.dotIndex++;
-        if (car.dotIndex >= car.street.dots.length - 2) {
-            car.garbage = true;
-            car.sprite.destroy();
-            return false;
-        } else if (trySetPosition(car, car.street.dots[car.dotIndex + 1])) {
-            car.dotIndex++;
-            return true;
-        }
-        return false;
-    }
 
-    function rotate(reference: Dot, target: Dot, angle: number): number[] {
-        const oldX = target.x - reference.x;//-target.x;
-        const oldY = target.y - reference.y;//-target.y;
-        const newX = oldX * Math.cos(angle) - oldY * Math.sin(angle);
-        const newY = oldX * Math.sin(angle) + oldY * Math.cos(angle);
-        return [reference.x + newX, reference.y + newY];
-    }
 
-    function getFrontDot(car: SimCar, position?: Dot): Dot {
-        if (!position) {
-            position = car.sprite;
-        }
-        const frontPoint = rotate(car.sprite, {
-            x: position.x,
-            y: position.y - car.sprite.height / 2
-        }, position.rotation ?? car.sprite.rotation);
-        return {
-            x: frontPoint[0],
-            y: frontPoint[1],
-            rotation: position.rotation ?? car.sprite.rotation
-        };
-    }
-
-    function boundingPoints(car: SimCar, position: Dot): number[] {
-        const halfWidth = car.sprite.width / 2 + 5;
-        const halfHeight = car.sprite.height / 2 + 5;
-        return [...rotate(car.sprite, {
-            x: position.x + halfWidth,
-            y: position.y + halfHeight
-        }, position.rotation ?? car.sprite.rotation),
-            ...rotate(car.sprite, {
-                x: position.x + halfWidth,
-                y: position.y - halfHeight
-            }, position.rotation ?? car.sprite.rotation),
-            ...rotate(car.sprite, {
-                x: position.x - halfWidth,
-                y: position.y - halfHeight
-            }, position.rotation ?? car.sprite.rotation),
-            ...rotate(car.sprite, {
-                x: position.x - halfWidth,
-                y: position.y + halfHeight
-            }, position.rotation ?? car.sprite.rotation)];
-    }
 
     const DISTANCE_CHECK_THRESHOLD = 60;
 
-    function trySetPosition(car: SimCar, position: Dot): boolean {
+    function trySetPosition(car: Car, position: Dot): boolean {
         if (car.mustWait) {
             car.mustWait = false;
             return false;
@@ -164,7 +75,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         if (position.checkForCollisions ?? car.street.dots[car.dotIndex].checkForCollisions) {
             car.checkCollisions = true
 
-            const collisionCandidates: SimCar[] = cars.filter((c) => c.checkCollisions &&
+            const collisionCandidates: Car[] = cars.filter((c) => c.checkCollisions &&
                 !c.garbage &&
                 c !== car &&
                 c.street !== car.street
