@@ -215,7 +215,7 @@ export class CarImpl implements Car {
         const angleOtherRelToCar = Math.abs(getAngleBetween(otherFrontDot, this.sprite) - otherFrontDot.rotation!);
         //If the angle between our frontPoint relative to the other cars center point is bigger than
         //the angle from the other cars front point to our center point, then continue
-        return angleCarRelToOther > angleOtherRelToCar ? -1 : 0;
+        return angleCarRelToOther < angleOtherRelToCar ? -1 : 0;
     }
 
     tick(delta: number) {

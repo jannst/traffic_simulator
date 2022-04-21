@@ -55,16 +55,18 @@ export class EnvironmentImpl implements Environment {
                 const carBounds = car.boundingPoints(position);
                 const frontDot: Dot = car.getFrontDot(position)
                 for (let i = 0; i < collisionCandidates.length; i++) {
+                    //only quick and dirty collision detection
                     if (car.wouldCollide({other: collisionCandidates[i], position: position, carBounds: carBounds})) {
-                        if (car.isAllowedToContinue({other: collisionCandidates[i],
-                            frontPoint: frontDot,
-                            othersIndexBiggerThanOwn: this.cars.indexOf(collisionCandidates[i]) > this.cars.indexOf(car)
-                        })) {
-                            if (this.cars.indexOf(collisionCandidates[i]) > this.cars.indexOf(car)) {
-                                collisionCandidates[i].mustWait = true;
-                            }
-                        } else {
-                            return false;
+                        switch (car.isAllowedToContinue({other: collisionCandidates[i], frontPoint: frontDot})) {
+                            case 1:
+                                continue;
+                            case -1:
+                                return false;
+                            case 0:
+                                if (this.cars.indexOf(collisionCandidates[i]) > this.cars.indexOf(car)) {
+                                    collisionCandidates[i].mustWait = true;
+                                }
+                                break;
                         }
                     }
                 }
