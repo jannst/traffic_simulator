@@ -54,7 +54,7 @@ export interface Car {
      * Decides, if the current car is allowed to continue
      * @param args
      */
-    isAllowedToContinue(args: { other: Car, frontPoint?: Dot }): boolean
+    isAllowedToContinue(args: { other: Car, frontPoint?: Dot }): number
 
     /**
      * Tries to add the car to the map
@@ -201,7 +201,7 @@ export class CarImpl implements Car {
             other.street !== this.street;
     }
 
-    isAllowedToContinue({other, frontDot}: { other: Car; frontDot?: Dot }): boolean {
+    isAllowedToContinue({other, frontDot}: { other: Car; frontDot?: Dot }): number {
         if (!frontDot) {
             frontDot = this.getFrontDot();
         }
@@ -209,13 +209,13 @@ export class CarImpl implements Car {
         if (angleCarRelToOther > 0.4 * Math.PI) {
             //the center of the other car is probably behind our front point
             //As this is only a heuristic, we decide that this car can continue
-            return true;
+            return 1;
         }
         const otherFrontDot = other.getFrontDot();
         const angleOtherRelToCar = Math.abs(getAngleBetween(otherFrontDot, this.sprite) - otherFrontDot.rotation!);
         //If the angle between our frontPoint relative to the other cars center point is bigger than
         //the angle from the other cars front point to our center point, then continue
-        return angleCarRelToOther > angleOtherRelToCar;
+        return angleCarRelToOther > angleOtherRelToCar ? -1 : 0;
     }
 
     tick(delta: number) {
