@@ -43,11 +43,19 @@ export class EnvironmentImpl implements Environment {
 
         //cars must be insertet at "right" place to make sure inside lane collision detection works
         const newAry = this.carsByStreet[car.street.name];
-        for(let i = newAry.length-1; i >= 0; i--) {
-            const otherCar = newAry[i];
-            if(otherCar.dotIndex <= car.dotIndex) {
-                newAry.splice(i, 0, car)
-                break;
+        if (newAry.length === 0) {
+            newAry.push(car);
+        } else {
+            for (let i = newAry.length - 1; i >= 0; i--) {
+                const otherCar = newAry[i];
+                if (otherCar.dotIndex <= car.dotIndex) {
+                    console.log(`car: ${car.dotIndex} ${otherCar.dotIndex}`);
+                    newAry.splice(i, 0, car)
+                    break;
+                }
+                if (i === 0) {
+                    newAry.splice(i, 0, car)
+                }
             }
         }
     }
@@ -108,13 +116,4 @@ export class EnvironmentImpl implements Environment {
         })
     }
 
-
-}
-
-function removeItem<T>(arr: Array<T>, value: T): Array<T> {
-    const index = arr.indexOf(value);
-    if (index > -1) {
-        arr.splice(index, 1);
-    }
-    return arr;
 }

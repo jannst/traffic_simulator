@@ -104,7 +104,7 @@ export class CarImpl implements Car {
         this.dotIndex = 0;
         this.garbage = false;
         //speed of the car
-        this.pxPerTick = 1.5;
+        this.pxPerTick = 2.5;
 
         this.sprite.x = street.dots[0]!.x;
         this.sprite.y = street.dots[0]!.y;
@@ -138,6 +138,9 @@ export class CarImpl implements Car {
             return false;
         } else if (this.environment.trySetPosition(this, this.street.dots[this.dotIndex + 1])) {
             this.dotIndex++;
+            if(this.dotIndex in this.street.children && Math.random() > .5) {
+                this.changeStreet({street: this.street.children[this.dotIndex].street, targetIndex: 0});
+            }
             return true;
         }
         return false;

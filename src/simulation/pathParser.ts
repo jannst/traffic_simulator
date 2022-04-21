@@ -21,7 +21,7 @@ export interface Street {
     parentStreet?: Street
     mergesIntoId?: string
     mergesInto?: { street: Street, targetIndex: number }
-    children: { street: Street, dotIndex: number }[]
+    children: { [key: number]: { street: Street } },
     name: string,
 }
 
@@ -44,11 +44,14 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
             if (itemPaths.length !== 1) {
                 throw new Error(`Street ${attributes[1]} contains more than one or no paths. This is illegal`);
             }
+            if(streets.filter((street) => street.id === streetId).length > 0) {
+                throw new Error(`duplicate street id: ${streetId}`);
+            }
             const path = parsePath(itemPaths[0].getAttribute("d") ?? "");
             streets.push({
                 name: streetName,
                 dots: path,
-                children: [],
+                children: {},
                 id: streetId,
                 parentId: parentId,
                 mergesIntoId: mergesIntoId
@@ -61,10 +64,7 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
         if (street.parentId) {
             const parentStreet = streets.find((str) => str.id === street.parentId);
             if (parentStreet) {
-                parentStreet.children.push({
-                    street: street,
-                    dotIndex: findMinimumDistanceIndex(parentStreet, street.dots[0])
-                });
+                parentStreet.children[findMinimumDistanceIndex(parentStreet, street.dots[0])] = {street: street};
                 street.parentStreet = parentStreet;
             } else {
                 throw new Error(`unknown parent street id ${street.parentId}`);
