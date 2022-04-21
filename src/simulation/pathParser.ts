@@ -10,7 +10,8 @@ export interface Dot {
 }
 
 export interface SimulationObjects {
-    streets: Street[]
+    streets: Street[],
+    trafficLights: TrafficLight[]
 }
 
 export interface Street {
@@ -25,8 +26,14 @@ export interface Street {
     name: string,
 }
 
+export interface TrafficLight {
+    polygon: number[]
+    name: string
+}
+
 export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<SimulationObjects> {
     const streets: Street[] = [];
+    const trafficLights: TrafficLight[] = [];
     const text = await (await fetch(assetPath)).text();
     let parser = new DOMParser();
     let xmlDoc = parser.parseFromString(text, "text/xml");
@@ -38,13 +45,24 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
         }
         //formmat of street layer names: S;<id>;<parent_id>;<merges_into_id>;<name>
         const attributes = (item.getAttribute("inkscape:label") ?? "").split(";");
+        if (attributes.length >= 1 && attributes[0] === "A") {
+            const [ampelName] = attributes.slice(1)
+
+            const itemPaths = item.getElementsByTagName("path");
+            if (itemPaths.length !== 1) {
+                throw new Error(`Traffic light ${ampelName} contains more than one or no paths. This is illegal`);
+            }
+            const polygonPoints = parseTrafficLightPolygon(itemPaths[0].getAttribute("d")!);
+            trafficLights.push({polygon: polygonPoints, name: ampelName});
+            console.log("loaded ampel: " + item.getAttribute("inkscape:label"));
+        }
         if (attributes.length >= 5 && attributes[0] === "S") {
             const [streetId, parentId, mergesIntoId, streetName] = attributes.slice(1)
             const itemPaths = item.getElementsByTagName("path");
             if (itemPaths.length !== 1) {
                 throw new Error(`Street ${attributes[1]} contains more than one or no paths. This is illegal`);
             }
-            if(streets.filter((street) => street.id === streetId).length > 0) {
+            if (streets.filter((street) => street.id === streetId).length > 0) {
                 throw new Error(`duplicate street id: ${streetId}`);
             }
             const path = parsePath(itemPaths[0].getAttribute("d") ?? "");
@@ -59,6 +77,7 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
             console.log("loaded street: " + item.getAttribute("inkscape:label"));
         }
     }
+    console.log(trafficLights);
     //okay, now wire streets together
     streets.forEach((street) => {
         if (street.parentId) {
@@ -84,7 +103,7 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
     });
     findStreetIntersections(streets);
     console.log(streets);
-    return {streets: streets};
+    return {streets: streets, trafficLights: trafficLights};
 }
 
 function findMinimumDistanceIndex(street: Street, dot: Dot): number {
@@ -131,6 +150,26 @@ function findStreetIntersections(streets: Street[]) {
             //}
         }
     }
+}
+
+
+function parseTrafficLightPolygon(pathDescription: string): number[] {
+    const commands: Command[] = parseSVG(pathDescription);
+    const points: number[] = []
+    let x: number = 0;
+    let y: number = 0;
+    commands.forEach((cmd) => {
+        if (cmd.command === 'moveto') {
+            x = cmd.x;
+            y = cmd.y;
+            points.push(x, y);
+        } else if (cmd.command === 'lineto') {
+            x = cmd.relative ? x + cmd.x : cmd.x;
+            y = cmd.relative ? y + cmd.y : cmd.y;
+            points.push(x, y);
+        }
+    });
+    return points;
 }
 
 //this variable controls the distance between the equally distributed points

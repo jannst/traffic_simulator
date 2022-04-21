@@ -24,6 +24,13 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
         );
         app.stage.addChild(pointsGraphic);
     });
+
+    simulationObjects.trafficLights.forEach((trafficLight) => {
+        const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
+        pointsGraphic.lineStyle(2, 0x00FF00, 1);
+        pointsGraphic.drawPolygon(trafficLight.polygon);
+        app.stage.addChild(pointsGraphic);
+    });
     initCars(app, simulationObjects);
     app.start();
     return app;

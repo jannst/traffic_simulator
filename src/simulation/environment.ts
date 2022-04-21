@@ -49,8 +49,8 @@ export class EnvironmentImpl implements Environment {
             for (let i = newAry.length - 1; i >= 0; i--) {
                 const otherCar = newAry[i];
                 if (otherCar.dotIndex <= car.dotIndex) {
-                    console.log(`car: ${car.dotIndex} ${otherCar.dotIndex}`);
-                    newAry.splice(i, 0, car)
+                    //console.log(`car: ${car.dotIndex} ${otherCar.dotIndex}`);
+                    newAry.splice(Math.min(i+1, newAry.length-1), 0, car)
                     break;
                 }
                 if (i === 0) {
