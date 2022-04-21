@@ -1,5 +1,5 @@
 import {Application} from "pixi.js";
-import React, {MutableRefObject, useEffect, useMemo, useRef} from "react";
+import React, {MutableRefObject, useEffect} from "react";
 
 export const SimulationWrapper = React.forwardRef(({app}: { app: Application | undefined }, ref) => {
     console.log("sim app")
@@ -14,7 +14,7 @@ export const SimulationWrapper = React.forwardRef(({app}: { app: Application | u
                 console.error("could not append app to div")
             }
         }
-    }, [app]);
+    }, [app,ref]);
 
         return <div style={{transformOrigin: "0 0"}} ref={ref as MutableRefObject<any>}/>;
 });

@@ -1,21 +1,38 @@
 import {Car} from "./car";
-import {distance, Dot, getAngleBetween, Street} from "./pathParser";
-import intersects from "intersects";
+import {Dot, Street} from "./pathParser";
+import {Application} from "pixi.js";
 
 export interface Environment {
     cars: Car[],
     carsByStreet: { [key: string]: Car[] }
     streets: Street[];
+    trySetPosition: (car: Car, position: Dot) => boolean;
+    garbageCollect: () => void
+    spawnCar(car: Car): boolean
 }
 
 export class EnvironmentImpl implements Environment {
     cars: Car[] = [];
     carsByStreet: { [p: string]: Car[] } = {};
     streets: Street[];
+    app: Application;
 
-    constructor(streets: Street[]) {
+    constructor(app: Application, streets: Street[]) {
+        this.app = app;
         this.streets = streets;
         streets.forEach((street) => this.carsByStreet[street.name] = []);
+    }
+
+    spawnCar(car: Car): boolean {
+        if (this.carsByStreet[car.street.name].length === 0 ||
+            car.enoughDistanceBetween(this.carsByStreet[car.street.name][0])
+        ) {
+            this.cars.push(car);
+            this.carsByStreet[car.street.name] = [car, ...this.carsByStreet[car.street.name]];
+            this.app.stage.addChild(car.sprite);
+            return true;
+        }
+        return false;
     }
 
     trySetPosition(car: Car, position: Dot): boolean {
@@ -60,6 +77,13 @@ export class EnvironmentImpl implements Environment {
             car.sprite.rotation = position.rotation;
         }
         return true;
+    }
+
+    garbageCollect() {
+        this.cars = this.cars.filter(car => !car.garbage);
+        Object.entries(this.carsByStreet).forEach(([key, value]) => {
+            this.carsByStreet[key] = value.filter(car => !car.garbage);
+        })
     }
 
 

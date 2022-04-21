@@ -173,6 +173,14 @@ export function getAngleBetween(a: Dot, b: Dot) {
     return getRotFromDiff(diffX, diffY);
 }
 
+export function rotate(reference: Dot, target: Dot, angle: number): number[] {
+    const oldX = target.x - reference.x;
+    const oldY = target.y - reference.y;
+    const newX = oldX * Math.cos(angle) - oldY * Math.sin(angle);
+    const newY = oldX * Math.sin(angle) + oldY * Math.cos(angle);
+    return [reference.x + newX, reference.y + newY];
+}
+
 function getRotFromDiff(diffX: number, diffY: number) {
     return Math.abs(Math.atan2(diffY, diffX) + (Math.PI * 1.5) % (2 * Math.PI));
 }
@@ -212,6 +220,7 @@ export function distance(a: Dot, b: Dot) {
 }
 
 
+/*
 //source: http://jsfiddle.net/m1erickson/LumMX/
 // quadratic bezier: percent is 0-1
 function getQuadraticBezierXYatPercent(startPt: Dot, controlPt: Dot, endPt: Dot, percent: number): Dot {
@@ -222,6 +231,7 @@ function getQuadraticBezierXYatPercent(startPt: Dot, controlPt: Dot, endPt: Dot,
         y: y
     });
 }
+ */
 
 // cubic bezier percent is 0-1
 function getCubicBezierXYatPercent(startPt: Dot, controlPt1: Dot, controlPt2: Dot, endPt: Dot, percent: number): Dot {

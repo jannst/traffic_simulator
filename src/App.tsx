@@ -1,9 +1,9 @@
-import React, {useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
 import {Box, Flex} from "./Layout";
 import {SimulationWrapper} from "./simulationWrapper";
 import {createApp} from "./simulation/simulation";
-import {loadSimulationObjectsFromSvg, SimulationObjects} from "./simulation/pathParser";
+import {loadSimulationObjectsFromSvg} from "./simulation/pathParser";
 import {Application} from "pixi.js";
 
 export const bgWidth = 1756;
@@ -13,7 +13,7 @@ function App() {
     const wrapperRef = useRef(null);
     const simulationRef = useRef(null);
     const [app, setApp] = useState<Application|undefined>();
-    const [simulationObjects, setSimulationObjects] = useState<SimulationObjects|undefined>();
+    //const [simulationObjects, setSimulationObjects] = useState<SimulationObjects|undefined>();
     //let app = createApp(simulationOjects);
 
     useEffect(() => {
@@ -25,7 +25,7 @@ function App() {
             simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
         }
         loadSimulationObjectsFromSvg("./Haw_Porsche_Center_Google_Earth.svg").then(objects => {
-            setSimulationObjects(objects);
+            //setSimulationObjects(objects);
             setApp(createApp(objects))
         });
     }, []);
