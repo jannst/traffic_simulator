@@ -65,7 +65,7 @@ export interface Car {
     /**
      * Process a tick
      */
-    tick(delta:number): void
+    tick(delta: number): void
 }
 
 //for collision detection
@@ -129,8 +129,12 @@ export class CarImpl implements Car {
      */
     incrementDotIndex(): boolean {
         if (this.dotIndex >= this.street.dots.length - 2) {
-            this.garbage = true;
-            this.sprite.destroy();
+            if (this.street.mergesInto) {
+                this.changeStreet(this.street.mergesInto);
+            } else {
+                this.garbage = true;
+                this.sprite.destroy();
+            }
             return false;
         } else if (this.environment.trySetPosition(this, this.street.dots[this.dotIndex + 1])) {
             this.dotIndex++;
@@ -218,42 +222,45 @@ export class CarImpl implements Car {
         return angleCarRelToOther < angleOtherRelToCar ? -1 : 0;
     }
 
+    changeStreet({street, targetIndex}:{street: Street, targetIndex: number}) {
+        const oldStreet = this.street;
+        this.dotIndex = targetIndex
+        this.street = street
+        this.environment.changeStreet(this, oldStreet);
+    }
+
     tick(delta: number) {
         //for (let i = 0; i < delta; i++) {
-            if (this.garbage) {
-                return;
-            }
-            if (this.dotIndex < this.street.dots.length - 1) {
-                const distToTravel = this.pxPerTick;
-                let dist = 0;
-                let distToNext = distance(this.sprite, this.street.dots[this.dotIndex + 1]);
-                while (dist < distToTravel) {
-                    if (distToNext < distToTravel) {
-                        dist += distToNext;
-                        if (!this.incrementDotIndex()) {
-                            break;
-                        }
-                        //tmpDot = car.street.dots[car.dotIndex]
-                        //console.log(tmpDot);
-                        //car.sprite.x = car.street.dots[car.dotIndex].x;
-                        //car.sprite.y = car.street.dots[car.dotIndex].y;
-                        //if (car.street.dots[car.dotIndex].rotation) {
-                        //    car.sprite.rotation = car.street.dots[car.dotIndex].rotation!;
-                        //}
-                        distToNext = distance(this.sprite, this.street.dots[this.dotIndex + 1]);
-                    } else if (distToNext > distToTravel) {
-                        let distScale = 1 / (distToNext / distToTravel);
-                        this.environment.trySetPosition(this, pointBetween(this.sprite, this.street.dots[this.dotIndex + 1], distScale))
-                        break;
-                    } else {
-                        this.incrementDotIndex();
+        if (this.garbage) {
+            return;
+        }
+        if (this.dotIndex < this.street.dots.length - 1) {
+            const distToTravel = this.pxPerTick;
+            let dist = 0;
+            let distToNext = distance(this.sprite, this.street.dots[this.dotIndex + 1]);
+            while (dist < distToTravel) {
+                if (distToNext < distToTravel) {
+                    dist += distToNext;
+                    if (!this.incrementDotIndex()) {
                         break;
                     }
+                    distToNext = distance(this.sprite, this.street.dots[this.dotIndex + 1]);
+                } else if (distToNext > distToTravel) {
+                    let distScale = 1 / (distToNext / distToTravel);
+                    this.environment.trySetPosition(this, pointBetween(this.sprite, this.street.dots[this.dotIndex + 1], distScale))
+                    break;
+                } else {
+                    this.incrementDotIndex();
+                    break;
                 }
-            } else {
-                this.garbage = true;
-                this.sprite.destroy();
             }
+        } else if (this.street.mergesInto) {
+            this.changeStreet(this.street.mergesInto);
+        } else {
+            this.garbage = true;
+            this.sprite.destroy();
         }
+    }
+
     //}
 }

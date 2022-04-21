@@ -15,6 +15,13 @@ export interface SimulationObjects {
 
 export interface Street {
     dots: Dot[],
+    parent?: Street,
+    id: string,
+    parentId?: string
+    parentStreet?: Street
+    mergesIntoId?: string
+    mergesInto?: { street: Street, targetIndex: number }
+    children: { street: Street, dotIndex: number }[]
     name: string,
 }
 
@@ -29,19 +36,68 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
         if (item.style.display === "none") {
             continue;
         }
+        //formmat of street layer names: S;<id>;<parent_id>;<merges_into_id>;<name>
         const attributes = (item.getAttribute("inkscape:label") ?? "").split(";");
-        if (attributes.length >= 1 && attributes[0] === "S") {
+        if (attributes.length >= 5 && attributes[0] === "S") {
+            const [streetId, parentId, mergesIntoId, streetName] = attributes.slice(1)
             const itemPaths = item.getElementsByTagName("path");
             if (itemPaths.length !== 1) {
-                throw new Error(`Street ${attributes[1]} contains more than one path. This is illegal`);
+                throw new Error(`Street ${attributes[1]} contains more than one or no paths. This is illegal`);
             }
             const path = parsePath(itemPaths[0].getAttribute("d") ?? "");
-            streets.push({name: attributes[1], dots: path});
+            streets.push({
+                name: streetName,
+                dots: path,
+                children: [],
+                id: streetId,
+                parentId: parentId,
+                mergesIntoId: mergesIntoId
+            });
             console.log("loaded street: " + item.getAttribute("inkscape:label"));
         }
     }
+    //okay, now wire streets together
+    streets.forEach((street) => {
+        if (street.parentId) {
+            const parentStreet = streets.find((str) => str.id === street.parentId);
+            if (parentStreet) {
+                parentStreet.children.push({
+                    street: street,
+                    dotIndex: findMinimumDistanceIndex(parentStreet, street.dots[0])
+                });
+                street.parentStreet = parentStreet;
+            } else {
+                throw new Error(`unknown parent street id ${street.parentId}`);
+            }
+        }
+        if (street.mergesIntoId) {
+            const targetStreet = streets.find((str) => str.id === street.mergesIntoId);
+            if (targetStreet) {
+                street.mergesInto = {
+                    street: targetStreet,
+                    targetIndex: findMinimumDistanceIndex(targetStreet, street.dots[street.dots.length - 1])
+                }
+            } else {
+                throw new Error(`unknown merges into street id ${street.mergesIntoId}`);
+            }
+        }
+    });
     findStreetIntersections(streets);
+    console.log(streets);
     return {streets: streets};
+}
+
+function findMinimumDistanceIndex(street: Street, dot: Dot): number {
+    let currentMinimum = Number.POSITIVE_INFINITY
+    let bestIndex = 0;
+    for (let i = 0; i < street.dots.length; i++) {
+        const currentDist = distance(dot, street.dots[i])
+        if (currentDist < currentMinimum) {
+            currentMinimum = currentDist;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
 }
 
 function findStreetIntersections(streets: Street[]) {
@@ -58,21 +114,21 @@ function findStreetIntersections(streets: Street[]) {
             //const dot = dots[j];
             dance:
                 //if (!dots[j].checkForCollisions) {
-                    for (let k = 0; k < streets.length; k++) {
-                        //do not check for points on same street
-                        if (k === i) continue;
-                        const checkDots = streets[k].dots;
-                        for (let l = 0; l < checkDots.length; l++) {
-                            if (distanceSmallerThan(dots[j], checkDots[l], minDist)) {
-                                for(let m = Math.max(j-lookahead, 0); m < Math.min(j+lookahead, dots.length); m++) {
-                                    dots[m].checkForCollisions = true
-                                }
-                                //checkDots[l].checkForCollisions = true;
-                                break dance;
+                for (let k = 0; k < streets.length; k++) {
+                    //do not check for points on same street
+                    if (k === i) continue;
+                    const checkDots = streets[k].dots;
+                    for (let l = 0; l < checkDots.length; l++) {
+                        if (distanceSmallerThan(dots[j], checkDots[l], minDist)) {
+                            for (let m = Math.max(j - lookahead, 0); m < Math.min(j + lookahead, dots.length); m++) {
+                                dots[m].checkForCollisions = true
                             }
+                            //checkDots[l].checkForCollisions = true;
+                            break dance;
                         }
                     }
-                //}
+                }
+            //}
         }
     }
 }

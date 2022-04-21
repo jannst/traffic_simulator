@@ -1,6 +1,6 @@
 import {Application} from "pixi.js";
 import {SimulationObjects} from "./pathParser";
-import {CarImpl} from "./car";
+import {Car, CarImpl} from "./car";
 import {Environment, EnvironmentImpl} from "./environment";
 
 export function initCars(app: Application, simulation: SimulationObjects) {
@@ -21,6 +21,6 @@ export function initCars(app: Application, simulation: SimulationObjects) {
         }
 
         //process cars
-        environment.cars.forEach((car) => car.tick(delta));
+        environment.cars.forEach((car: Car) => car.tick(delta));
     });
 }

@@ -32,7 +32,7 @@ function App() {
 
     return (
         <Flex flexDirection="row" height="100vh" width="100vw">
-            <Box width={200} height="100%" background="green" flexShrink={0}>
+            <Box width="20vw" height="100%" background="green" flexShrink={0}>
             </Box>
             <Box background="black" height="100%" flexGrow={1} ref={wrapperRef} overflow="scroll">
                 {useMemo(() => <SimulationWrapper ref={simulationRef} app={app}/>, [app])}

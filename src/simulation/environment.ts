@@ -8,8 +8,10 @@ export interface Environment {
     streets: Street[];
     trySetPosition: (car: Car, position: Dot) => boolean;
     garbageCollect: () => void
-    spawnCar(car: Car): boolean
+    spawnCar: (car: Car) => boolean
+    changeStreet: (car: Car, oldStreet: Street) => void
 }
+
 
 export class EnvironmentImpl implements Environment {
     cars: Car[] = [];
@@ -33,6 +35,21 @@ export class EnvironmentImpl implements Environment {
             return true;
         }
         return false;
+    }
+
+    changeStreet(car: Car, oldStreet: Street) {
+        const oldIndex = this.carsByStreet[oldStreet.name].indexOf(car);
+        this.carsByStreet[oldStreet.name].splice(oldIndex, 1);
+
+        //cars must be insertet at "right" place to make sure inside lane collision detection works
+        const newAry = this.carsByStreet[car.street.name];
+        for(let i = newAry.length-1; i >= 0; i--) {
+            const otherCar = newAry[i];
+            if(otherCar.dotIndex <= car.dotIndex) {
+                newAry.splice(i, 0, car)
+                break;
+            }
+        }
     }
 
     trySetPosition(car: Car, position: Dot): boolean {
@@ -92,4 +109,12 @@ export class EnvironmentImpl implements Environment {
     }
 
 
+}
+
+function removeItem<T>(arr: Array<T>, value: T): Array<T> {
+    const index = arr.indexOf(value);
+    if (index > -1) {
+        arr.splice(index, 1);
+    }
+    return arr;
 }
