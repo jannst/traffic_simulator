@@ -90,13 +90,6 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
             }
         })
     });
-    setInterval(() => {
-        trafficLights.forEach((tl) => {
-            let last = Math.random() > .5;
-            tl.setState(last)
-            last = !last;
-        })
-    }, 3000)
     console.log(streets);
     return {streets: streets, trafficLights: trafficLights};
 }
