@@ -42,11 +42,11 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
         <Flex p={1} flexDirection="column" justifyContent="space-between" overflow="auto">
             <Box>
                 <Heading onClick={toggleVisibilityForAll}>Streets</Heading>
-                {simulation.streets.map((street) => <Box my={1}><StreetBox street={street}/></Box>)}
+                {simulation.streets.map((street) => <Box my={1} key={street.name}><StreetBox street={street}/></Box>)}
             </Box>
             <Box>
                 <Heading>Traffic Lights</Heading>
-                {simulation.trafficLights.map((trafficLight) => <Box my={1}>
+                {simulation.trafficLights.map((trafficLight) => <Box my={1} key={trafficLight.name}>
                     <TrafficLightBox trafficLight={trafficLight}/>
                 </Box>)}
             </Box>

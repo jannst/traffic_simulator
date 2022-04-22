@@ -66,6 +66,9 @@ export class EnvironmentImpl implements Environment {
             car.mustWait = false;
             return false;
         }
+        if(car.street.dots[car.dotIndex].trafficLight?.state === false) {
+            return false;
+        }
         const carIndexInStreet = this.carsByStreet[car.street.name].indexOf(car);
         //in this case, there is another car before the current car
         if (this.carsByStreet[car.street.name].length - 1 > carIndexInStreet) {
