@@ -1,5 +1,5 @@
 import {Sprite} from "pixi.js";
-import {distance, Dot, getAngleBetween, pointBetween, rotate, Street} from "./pathParser";
+import {distance, Dot, getAngleBetween, pointBetween, rotate} from "./pathParser";
 import intersects from "intersects";
 import * as PIXI from "pixi.js";
 import {Environment} from "./environment";
@@ -7,6 +7,7 @@ import carImg1 from "../sprites/car-truck1.png";
 import carImg2 from "../sprites/car-truck2.png";
 import carImg3 from "../sprites/car-truck3.png";
 import carImg4 from "../sprites/car-truck4.png";
+import {Street} from "./Street";
 
 export interface Car {
     sprite: Sprite,

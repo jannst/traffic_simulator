@@ -1,4 +1,7 @@
 import {Command, MoveToCommand} from "svg-path-parser";
+import intersects from "intersects";
+import {TrafficLight, TrafficLightImpl} from "./TrafficLight";
+import {Street, StreetImpl} from "./Street";
 
 const parseSVG = require('svg-path-parser');
 
@@ -6,29 +9,13 @@ export interface Dot {
     x: number,
     y: number,
     checkForCollisions?: boolean,
-    rotation?: number
+    rotation?: number,
+    trafficLight?: TrafficLight
 }
 
 export interface SimulationObjects {
     streets: Street[],
     trafficLights: TrafficLight[]
-}
-
-export interface Street {
-    dots: Dot[],
-    parent?: Street,
-    id: string,
-    parentId?: string
-    parentStreet?: Street
-    mergesIntoId?: string
-    mergesInto?: { street: Street, targetIndex: number }
-    children: { [key: number]: { street: Street } },
-    name: string,
-}
-
-export interface TrafficLight {
-    polygon: number[]
-    name: string
 }
 
 export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<SimulationObjects> {
@@ -53,7 +40,7 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
                 throw new Error(`Traffic light ${ampelName} contains more than one or no paths. This is illegal`);
             }
             const polygonPoints = parseTrafficLightPolygon(itemPaths[0].getAttribute("d")!);
-            trafficLights.push({polygon: polygonPoints, name: ampelName});
+            trafficLights.push(new TrafficLightImpl(ampelName, polygonPoints));
             console.log("loaded ampel: " + item.getAttribute("inkscape:label"));
         }
         if (attributes.length >= 5 && attributes[0] === "S") {
@@ -66,25 +53,17 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
                 throw new Error(`duplicate street id: ${streetId}`);
             }
             const path = parsePath(itemPaths[0].getAttribute("d") ?? "");
-            streets.push({
-                name: streetName,
-                dots: path,
-                children: {},
-                id: streetId,
-                parentId: parentId,
-                mergesIntoId: mergesIntoId
-            });
+            streets.push(new StreetImpl(streetName, path, streetId, parentId, mergesIntoId));
             console.log("loaded street: " + item.getAttribute("inkscape:label"));
         }
     }
-    console.log(trafficLights);
     //okay, now wire streets together
     streets.forEach((street) => {
         if (street.parentId) {
             const parentStreet = streets.find((str) => str.id === street.parentId);
             if (parentStreet) {
                 parentStreet.children[findMinimumDistanceIndex(parentStreet, street.dots[0])] = {street: street};
-                street.parentStreet = parentStreet;
+                street.parent = parentStreet;
             } else {
                 throw new Error(`unknown parent street id ${street.parentId}`);
             }
@@ -101,7 +80,23 @@ export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<S
             }
         }
     });
+    //find street intersection and enable collision detection at these points
     findStreetIntersections(streets);
+    //and then connect traffic lights to dots in streets
+    trafficLights.forEach((trafficLight) => {
+        streets.map((street) => street.dots).flat().forEach((dot) => {
+            if (intersects.polygonPoint(trafficLight.polygon, dot.x, dot.y, 0)) {
+                dot.trafficLight = trafficLight;
+            }
+        })
+    });
+    setInterval(() => {
+        trafficLights.forEach((tl) => {
+            let last = Math.random() > .5;
+            tl.setState(last)
+            last = !last;
+        })
+    }, 3000)
     console.log(streets);
     return {streets: streets, trafficLights: trafficLights};
 }

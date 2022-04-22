@@ -1,10 +1,15 @@
 import * as PIXI from 'pixi.js';
 import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
 import {bgHeight, bgWidth} from "../App";
-import {SimulationObjects} from "./pathParser";
+import {loadSimulationObjectsFromSvg, SimulationObjects} from "./pathParser";
 import {initCars} from "./carTicker";
 
-export function createApp(simulationObjects: SimulationObjects): PIXI.Application {
+export interface Simulation extends SimulationObjects{
+    app: PIXI.Application,
+}
+
+export async function createApp(svgPath: string): Promise<Simulation> {
+    const simulationObjects: SimulationObjects = await loadSimulationObjectsFromSvg(svgPath)
     const app = new PIXI.Application({
         height: bgHeight,
         width: bgWidth,
@@ -17,21 +22,19 @@ export function createApp(simulationObjects: SimulationObjects): PIXI.Applicatio
 
     simulationObjects.streets.forEach((street) => {
         const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
-        street.dots.forEach((point) => {
-                pointsGraphic.lineStyle(1, point.checkForCollisions ? 0xFF0000 : 0xFFFFFF, 1);
-                pointsGraphic.drawCircle(point.x, point.y, 1);
-            }
-        );
+        street.setGraphics(pointsGraphic);
         app.stage.addChild(pointsGraphic);
     });
 
     simulationObjects.trafficLights.forEach((trafficLight) => {
         const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
-        pointsGraphic.lineStyle(2, 0x00FF00, 1);
-        pointsGraphic.drawPolygon(trafficLight.polygon);
+        trafficLight.setGraphics(pointsGraphic);
+        //just for drawing
+        trafficLight.setState(trafficLight.state);
         app.stage.addChild(pointsGraphic);
     });
+
     initCars(app, simulationObjects);
     app.start();
-    return app;
+    return {app: app, ...simulationObjects};
 }

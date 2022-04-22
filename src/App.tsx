@@ -2,9 +2,10 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
 import {Box, Flex} from "./Layout";
 import {SimulationWrapper} from "./simulationWrapper";
-import {createApp} from "./simulation/simulation";
+import {createApp, Simulation} from "./simulation/simulation";
 import {loadSimulationObjectsFromSvg} from "./simulation/pathParser";
 import {Application} from "pixi.js";
+import {SimulationControls} from "./SimulationControls";
 
 export const bgWidth = 1756;
 export const bgHeight = 1180;
@@ -12,9 +13,7 @@ export const bgHeight = 1180;
 function App() {
     const wrapperRef = useRef(null);
     const simulationRef = useRef(null);
-    const [app, setApp] = useState<Application|undefined>();
-    //const [simulationObjects, setSimulationObjects] = useState<SimulationObjects|undefined>();
-    //let app = createApp(simulationOjects);
+    const [simulation, setSimulation] = useState<Simulation | undefined>();
 
     useEffect(() => {
         if (wrapperRef.current != null) {
@@ -24,18 +23,19 @@ function App() {
             // @ts-ignore
             simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
         }
-        loadSimulationObjectsFromSvg("./Haw_Porsche_Center_Google_Earth.svg").then(objects => {
+        createApp("./Haw_Porsche_Center_Google_Earth.svg").then(simulation => {
             //setSimulationObjects(objects);
-            setApp(createApp(objects))
+            setSimulation(simulation)
         });
     }, []);
 
     return (
         <Flex flexDirection="row" height="100vh" width="100vw">
             <Box width="20vw" height="100%" background="green" flexShrink={0}>
+                {simulation && <SimulationControls simulation={simulation}/>}
             </Box>
             <Box background="black" height="100%" flexGrow={1} ref={wrapperRef} overflow="scroll">
-                {useMemo(() => <SimulationWrapper ref={simulationRef} app={app}/>, [app])}
+                {useMemo(() => <SimulationWrapper ref={simulationRef} app={simulation?.app}/>, [simulation?.app])}
             </Box>
         </Flex>
 

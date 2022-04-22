@@ -8,7 +8,7 @@ export function initCars(app: Application, simulation: SimulationObjects) {
     const spawnCarEveryXTicks = 60 * 1.6;
     let ticksPassed = spawnCarEveryXTicks + 1;
 
-    const availiableStreets = simulation.streets.filter((street) => !street.parentStreet);
+    const availiableStreets = simulation.streets.filter((street) => !street.parent);
 
     app.ticker.add((delta) => {
         //generate new cars

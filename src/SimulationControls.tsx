@@ -1,0 +1,97 @@
+import {Box, Flex} from "./Layout";
+import {Simulation} from "./simulation/simulation";
+import {Street} from "./simulation/Street";
+import styled from "styled-components";
+import {useState} from "react";
+import {background, BackgroundProps} from "styled-system";
+import {TrafficLight} from "./simulation/TrafficLight";
+
+const Text = styled.p`
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+`
+
+const SubText = styled(Text)`
+  font-size: 9px;
+`
+
+const Button = styled.button<BackgroundProps>`
+  ${background};
+`;
+
+const Heading = styled.h3`
+  text-align: center;
+  color: white;
+`;
+
+function useForceUpdate() {
+    const [value, setValue] = useState(0); // integer state
+    return () => setValue(value + 1); // update the state to force render
+}
+
+export function SimulationControls({simulation}: { simulation: Simulation }) {
+    const [allVisible, setAllVisible] = useState(false);
+
+    function toggleVisibilityForAll() {
+        simulation.streets.forEach((street => street.setHighlight(!allVisible)));
+        setAllVisible(!allVisible);
+    }
+
+    return (
+        <Flex p={1} flexDirection="column" justifyContent="space-between" overflow="auto">
+            <Box>
+                <Heading onClick={toggleVisibilityForAll}>Streets</Heading>
+                {simulation.streets.map((street) => <Box my={1}><StreetBox street={street}/></Box>)}
+            </Box>
+            <Box>
+                <Heading>Traffic Lights</Heading>
+                {simulation.trafficLights.map((trafficLight) => <Box my={1}>
+                    <TrafficLightBox trafficLight={trafficLight}/>
+                </Box>)}
+            </Box>
+        </Flex>
+    );
+}
+
+function StreetBox({street}: { street: Street }) {
+    const forceUpdate = useForceUpdate();
+
+    function updateVisibility(value: boolean) {
+        street.setHighlight(value);
+        forceUpdate();
+    }
+
+    return (
+        <Box p={1} background="lightgrey">
+            <Text>{street.name}</Text>
+            {street.parent && <SubText>Parent: {street.parent.name}</SubText>}
+            {street.mergesInto && <SubText>Merges Into: {street.mergesInto.street.name}</SubText>}
+            <Button
+                background={street.highlight ? "lightgreen" : "white"}
+                onClick={() => updateVisibility(!street.highlight)}>
+                toggle highlight
+            </Button>
+        </Box>
+    )
+}
+
+function TrafficLightBox({trafficLight}: { trafficLight: TrafficLight }) {
+    const forceUpdate = useForceUpdate();
+
+    function updateVisibility(value: boolean) {
+        trafficLight.setHighlight(value);
+        forceUpdate();
+    }
+
+    return (
+        <Box p={1} background="lightgrey">
+            <Text>{trafficLight.name}</Text>
+            <Button
+                background={trafficLight.highlight ? "lightgreen" : "white"}
+                onClick={() => updateVisibility(!trafficLight.highlight)}>
+                toggle highlight
+            </Button>
+        </Box>
+    )
+}

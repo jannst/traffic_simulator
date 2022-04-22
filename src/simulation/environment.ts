@@ -1,6 +1,7 @@
 import {Car} from "./car";
-import {Dot, Street} from "./pathParser";
+import {Dot} from "./pathParser";
 import {Application} from "pixi.js";
+import {Street} from "./Street";
 
 export interface Environment {
     cars: Car[],
