@@ -44,7 +44,7 @@ export class TrafficLightImpl implements TrafficLight {
         this.state = state;
         if (this.graphics) {
             this.graphics.clear();
-            this.graphics.lineStyle(3, this.state ? 0x00FF00 : 0xFF0000, 1);
+            this.graphics.lineStyle(2, this.state ? 0x00FF00 : 0xFF0000, .6);
             this.graphics.beginFill(this.state ? 0x00FF00 : 0xFF0000, .3)
             this.graphics.drawPolygon(this.polygon);
             if(this.highlight){

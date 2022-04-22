@@ -139,7 +139,7 @@ export class CarImpl implements Car {
             return false;
         } else if (this.environment.trySetPosition(this, this.street.dots[this.dotIndex + 1])) {
             this.dotIndex++;
-            if(this.dotIndex in this.street.children && Math.random() > .5) {
+            if (this.dotIndex in this.street.children && Math.random() <= this.street.children[this.dotIndex].street.percentage) {
                 this.changeStreet({street: this.street.children[this.dotIndex].street, targetIndex: 0});
             }
             return true;
@@ -226,7 +226,7 @@ export class CarImpl implements Car {
         return angleCarRelToOther < angleOtherRelToCar ? -1 : 0;
     }
 
-    changeStreet({street, targetIndex}:{street: Street, targetIndex: number}) {
+    changeStreet({street, targetIndex}: { street: Street, targetIndex: number }) {
         const oldStreet = this.street;
         this.dotIndex = targetIndex
         this.street = street

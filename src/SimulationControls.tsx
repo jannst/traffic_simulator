@@ -61,12 +61,23 @@ function StreetBox({street}: { street: Street }) {
         street.setHighlight(value);
         forceUpdate();
     }
+    function handleChange(event: any) {
+        street.percentage = event.target.value;
+        forceUpdate();
+    }
 
     return (
         <Box p={1} background="lightgrey">
             <Text>{street.name}</Text>
             {street.parent && <SubText>Parent: {street.parent.name}</SubText>}
             {street.mergesInto && <SubText>Merges Into: {street.mergesInto.street.name}</SubText>}
+            <input
+                id="typeinp"
+                type="range"
+                min="0" max="1"
+                value={street.percentage}
+                onChange={handleChange}
+                step=".05"/>
             <Button
                 background={street.highlight ? "lightgreen" : "white"}
                 onClick={() => updateVisibility(!street.highlight)}>

@@ -13,6 +13,8 @@ export interface Street {
     highlight: Boolean,
     setHighlight: (visibility: boolean) => void
     setGraphics: (graphics: Graphics) => void
+    percentage: number
+    //setPercentage: (percenttage: number) => void
 }
 
 export class StreetImpl implements Street {
@@ -26,6 +28,7 @@ export class StreetImpl implements Street {
     parentId: string;
     graphics?: Graphics;
     highlight: boolean = false;
+    percentage = .25
 
     constructor(name: string, dots: Dot[], id: string, parentId: string, mergesIntoId: string) {
         this.name = name;
