@@ -44,6 +44,8 @@ export class TrafficLightImpl implements TrafficLight, TrafficLightConfiguration
 
     setGraphics(graphics: Graphics) {
         this.graphics = graphics;
+        graphics.interactive = true;
+        graphics.on('pointerdown', () => console.log("clicked :)"));
     }
 
     setHighlight(highlight: boolean) {

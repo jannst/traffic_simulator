@@ -18,15 +18,16 @@ function App() {
     useEffect(() => {
         if (wrapperRef.current != null) {
             let htmlElem = wrapperRef.current as HTMLElement;
-            const scaleY = htmlElem.clientHeight / bgHeight;
-            const scaleX = htmlElem.clientWidth / bgWidth;
+
+            //const scaleY = htmlElem.clientHeight / bgHeight;
+            //const scaleX = htmlElem.clientWidth / bgWidth;
             // @ts-ignore
-            simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
-        }
-        createApp("./Haw_Porsche_Center_Google_Earth.svg").then(simulation => {
+            //simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
+        createApp("./Haw_Porsche_Center_Google_Earth.svg", htmlElem).then(simulation => {
             //setSimulationObjects(objects);
             setSimulation(simulation)
         });
+        }
     }, []);
 
     return (

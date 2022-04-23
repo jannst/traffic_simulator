@@ -2,6 +2,7 @@ import {Car} from "./car";
 import {Dot} from "./pathParser";
 import {Application} from "pixi.js";
 import {Street} from "./Street";
+import {Viewport} from "pixi-viewport";
 
 export interface Environment {
     cars: Car[],
@@ -18,10 +19,10 @@ export class EnvironmentImpl implements Environment {
     cars: Car[] = [];
     carsByStreet: { [p: string]: Car[] } = {};
     streets: Street[];
-    app: Application;
+    viewport: Viewport;
 
-    constructor(app: Application, streets: Street[]) {
-        this.app = app;
+    constructor(viewport: Viewport, streets: Street[]) {
+        this.viewport = viewport;
         this.streets = streets;
         streets.forEach((street) => this.carsByStreet[street.name] = []);
     }
@@ -32,7 +33,7 @@ export class EnvironmentImpl implements Environment {
         ) {
             this.cars.push(car);
             this.carsByStreet[car.street.name] = [car, ...this.carsByStreet[car.street.name]];
-            this.app.stage.addChild(car.sprite);
+            this.viewport.addChild(car.sprite);
             return true;
         }
         return false;
