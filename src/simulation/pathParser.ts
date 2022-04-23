@@ -18,12 +18,11 @@ export interface SimulationObjects {
     trafficLights: TrafficLight[]
 }
 
-export async function loadSimulationObjectsFromSvg(assetPath: string): Promise<SimulationObjects> {
+export function loadSimulationObjectsFromSvg(rawSvgData: string): SimulationObjects {
     const streets: Street[] = [];
     const trafficLights: TrafficLight[] = [];
-    const text = await (await fetch(assetPath)).text();
     let parser = new DOMParser();
-    let xmlDoc = parser.parseFromString(text, "text/xml");
+    let xmlDoc = parser.parseFromString(rawSvgData, "text/xml");
     let items = xmlDoc.getElementsByTagName("g");
     for (let i = 0; i < items.length; i++) {
         const item = items[i];

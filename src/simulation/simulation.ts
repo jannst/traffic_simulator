@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
 import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
-import {bgHeight, bgWidth} from "../App";
 import {loadSimulationObjectsFromSvg, SimulationObjects} from "./pathParser";
 import {Environment, EnvironmentImpl} from "./environment";
 import {Car, CarImpl} from "./car";
@@ -12,7 +11,7 @@ export interface Simulation extends SimulationObjects {
     app: PIXI.Application,
 }
 
-export async function createApp(svgPath: string, parent: HTMLElement): Promise<Simulation> {
+export function createSimulation(rawSvgData: string, parent: HTMLElement): Simulation {
     const app = new PIXI.Application({
         //height: bgHeight,
         //width: bgWidth,
@@ -45,7 +44,8 @@ export async function createApp(svgPath: string, parent: HTMLElement): Promise<S
     const bgSprite = PIXI.Sprite.from(bgImg);
     viewport.addChild(bgSprite);
 
-    const simulationObjects: SimulationObjects = await loadSimulationObjectsFromSvg(svgPath)
+
+    const simulationObjects: SimulationObjects = loadSimulationObjectsFromSvg(rawSvgData)
     const environment: Environment = new EnvironmentImpl(viewport, simulationObjects.streets);
     const availiableStreets = simulationObjects.streets.filter((street) => !street.parent);
 

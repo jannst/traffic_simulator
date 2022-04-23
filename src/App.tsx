@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
 import {Box, Flex} from "./Layout";
 import {SimulationWrapper} from "./simulationWrapper";
-import {createApp, Simulation} from "./simulation/simulation";
+import {createSimulation, Simulation} from "./simulation/simulation";
 import {loadSimulationObjectsFromSvg} from "./simulation/pathParser";
 import {Application} from "pixi.js";
 import {SimulationControls} from "./SimulationControls";
@@ -23,10 +23,10 @@ function App() {
             //const scaleX = htmlElem.clientWidth / bgWidth;
             // @ts-ignore
             //simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
-        createApp("./Haw_Porsche_Center_Google_Earth.svg", htmlElem).then(simulation => {
-            //setSimulationObjects(objects);
-            setSimulation(simulation)
-        });
+            fetch("./Haw_Porsche_Center_Google_Earth.svg")
+                .then((response) => response.text().then((rawSvgString) => {
+                    setSimulation(createSimulation(rawSvgString, htmlElem))
+                }))
         }
     }, []);
 
