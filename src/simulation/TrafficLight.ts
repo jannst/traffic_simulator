@@ -1,5 +1,8 @@
 import {Graphics} from "pixi.js";
 import {TrafficLightConfiguration} from "../algo/algorithm";
+import {Dot} from "./pathParser";
+
+export type OnClickTrafficLight = (trafficLight: TrafficLight) => void;
 
 export interface TrafficLight {
     polygon: number[],
@@ -10,6 +13,8 @@ export interface TrafficLight {
     setHighlight: (highlight: boolean) => void
     highlight: boolean;
     setGraphics: (graphics: Graphics) => void
+    primitiveCenterPoint: () => Dot
+    onClick?: OnClickTrafficLight
     tick: () => void
 }
 
@@ -22,6 +27,7 @@ export class TrafficLightImpl implements TrafficLight, TrafficLightConfiguration
     avgCarsPerSec: number = 0;
     redTimeSec: number = 0;
     untilRedSec: number = 0;
+    onClick?: () => void
 
     constructor(name: string, polygon: number[]) {
         this.name = name;
@@ -45,7 +51,11 @@ export class TrafficLightImpl implements TrafficLight, TrafficLightConfiguration
     setGraphics(graphics: Graphics) {
         this.graphics = graphics;
         graphics.interactive = true;
-        graphics.on('pointerdown', () => console.log("clicked :)"));
+        graphics.on('pointerdown', () => {
+            if(this.onClick) {
+                this.onClick();
+            }
+        });
     }
 
     setHighlight(highlight: boolean) {
@@ -72,6 +82,17 @@ export class TrafficLightImpl implements TrafficLight, TrafficLightConfiguration
                 this.drawHighlighting();
             }
         }
+    }
+
+    primitiveCenterPoint(): Dot {
+        const result = {x: 0, y:0};
+        for(let i = 0; i < this.polygon.length-1; i+=2) {
+            result.x += this.polygon[i];
+            result.y += this.polygon[i+1];
+        }
+        result.x = result.x/(this.polygon.length/2)
+        result.y = result.y/(this.polygon.length/2)
+        return result;
     }
 
     setState(state: boolean): void {

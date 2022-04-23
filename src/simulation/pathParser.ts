@@ -16,6 +16,8 @@ export interface Dot {
 export interface SimulationObjects {
     streets: Street[],
     trafficLights: TrafficLight[]
+    imageHeight: number
+    imageWidth: number
 }
 
 export function loadSimulationObjectsFromSvg(rawSvgData: string): SimulationObjects {
@@ -23,6 +25,9 @@ export function loadSimulationObjectsFromSvg(rawSvgData: string): SimulationObje
     const trafficLights: TrafficLight[] = [];
     let parser = new DOMParser();
     let xmlDoc = parser.parseFromString(rawSvgData, "text/xml");
+    const svgRoot = xmlDoc.getElementsByTagName("svg")[0];
+    const height = parseInt(svgRoot.getAttribute("height")!);
+    const width = parseInt(svgRoot.getAttribute("width")!);
     let items = xmlDoc.getElementsByTagName("g");
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -90,7 +95,7 @@ export function loadSimulationObjectsFromSvg(rawSvgData: string): SimulationObje
         })
     });
     console.log(streets);
-    return {streets: streets, trafficLights: trafficLights};
+    return {streets: streets, trafficLights: trafficLights, imageHeight: height, imageWidth: width};
 }
 
 function findMinimumDistanceIndex(street: Street, dot: Dot): number {
