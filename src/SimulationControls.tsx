@@ -25,6 +25,22 @@ const Heading = styled.h3`
   color: white;
 `;
 
+const Container = styled(Box)`
+  ::-webkit-scrollbar {
+    width: 9px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(155, 155, 155);
+    border-radius: 20px;
+    border: transparent;
+  }
+`;
+
 function useForceUpdate() {
     const [value, setValue] = useState(0); // integer state
     return () => setValue(value + 1); // update the state to force render
@@ -39,18 +55,21 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
     }
 
     return (
-        <Flex p={1} flexDirection="column" justifyContent="space-between" overflow="auto">
-            <Box>
-                <Heading onClick={toggleVisibilityForAll}>Streets</Heading>
-                {simulation.streets.map((street) => <Box my={1} key={street.name}><StreetBox street={street}/></Box>)}
-            </Box>
-            <Box>
-                <Heading>Traffic Lights</Heading>
-                {simulation.trafficLights.map((trafficLight) => <Box my={1} key={trafficLight.name}>
-                    <TrafficLightBox trafficLight={trafficLight}/>
-                </Box>)}
-            </Box>
-        </Flex>
+        <Container height="100%" overflow="auto">
+            <Flex p={1} flexDirection="column" justifyContent="space-between">
+                <Box>
+                    <Heading onClick={toggleVisibilityForAll}>Streets</Heading>
+                    {simulation.streets.map((street) => <Box my={1} key={street.name}><StreetBox
+                        street={street}/></Box>)}
+                </Box>
+                <Box>
+                    <Heading>Traffic Lights</Heading>
+                    {simulation.trafficLights.map((trafficLight) => <Box my={1} key={trafficLight.name}>
+                        <TrafficLightBox trafficLight={trafficLight}/>
+                    </Box>)}
+                </Box>
+            </Flex>
+        </Container>
     );
 }
 
@@ -61,6 +80,7 @@ function StreetBox({street}: { street: Street }) {
         street.setHighlight(value);
         forceUpdate();
     }
+
     function handleChange(event: any) {
         street.percentage = event.target.value;
         forceUpdate();

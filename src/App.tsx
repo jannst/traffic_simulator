@@ -32,10 +32,10 @@ function App() {
 
     return (
         <Flex flexDirection="row" height="100vh" width="100vw">
-            <Box width="20vw" height="100%" background="green" flexShrink={0}>
+            <Box width="20vw" height="100%" maxHeight="100%" overflow="hidden" background="green" flexShrink={0}>
                 {simulation && <SimulationControls simulation={simulation}/>}
             </Box>
-            <Box background="black" height="100%" flexGrow={1} ref={wrapperRef} overflow="scroll">
+            <Box background="black" height="100%" overflow="hidden" flexGrow={1} ref={wrapperRef}>
                 {useMemo(() => <SimulationWrapper ref={simulationRef} app={simulation?.app}/>, [simulation?.app])}
             </Box>
         </Flex>
