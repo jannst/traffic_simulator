@@ -1,24 +1,20 @@
 import {TrafficLight} from "./TrafficLight";
 import {Constraint, ConstraintImpl, ConstraintType} from "./Constraint";
-import {Viewport} from "pixi-viewport";
-import {Graphics} from "pixi.js";
+import {Container, DisplayObject, Graphics} from "pixi.js";
 
-export class InteractionHandler{
+export class ConstraintHandler {
     currentMode?: ConstraintType;
     firstNode?: TrafficLight;
     constraints: Constraint[];
-    viewport: Viewport;
+    container: Container;
 
-    constructor(constraints: Constraint[], viewport: Viewport) {
+    constructor(constraints: Constraint[], viewport: Container) {
         this.constraints = constraints;
-        this.viewport = viewport;
+        this.container = viewport;
     }
 
-    setConstraintMode(type?: ConstraintType){
-
-        console.log("updateeee", type);
+    setConstraintMode(type?: ConstraintType) {
         this.currentMode = type;
-        console.log(this);
     }
 
     clear() {
@@ -26,23 +22,23 @@ export class InteractionHandler{
         this.firstNode = undefined;
     }
 
+    addConstraint(a: TrafficLight, b: TrafficLight, type: ConstraintType) {
+        const graphics = new Graphics();
+        this.container.addChild(graphics);
+        const constraint: ConstraintImpl = new ConstraintImpl(a,
+            b,
+            type,
+            graphics,
+            () => this.onClickConstraint(constraint)
+        );
+        this.constraints.push(constraint);
+    }
+
     onClickTrafficLight(trafficLight: TrafficLight) {
-        console.log(this);
-        console.log("click!", this.currentMode);
-        if(this.currentMode) {
-        console.log("click!!");
-            if(this.firstNode && this.firstNode !== trafficLight) {
-        console.log("click!!!");
+        if (this.currentMode) {
+            if (this.firstNode && this.firstNode !== trafficLight) {
                 //okay, we have all the required info
-                const graphics = new Graphics();
-                this.viewport.addChild(graphics);
-                const constraint: ConstraintImpl = new ConstraintImpl(this.firstNode,
-                    trafficLight,
-                    this.currentMode,
-                    graphics,
-                    () => this.onClickConstraint(constraint)
-                );
-                this.constraints.push(constraint);
+                this.addConstraint(this.firstNode, trafficLight, this.currentMode);
                 this.clear();
             } else {
                 this.firstNode = trafficLight;
@@ -52,7 +48,7 @@ export class InteractionHandler{
 
     onClickConstraint(constraint: Constraint) {
         const index = this.constraints.indexOf(constraint)
-        if(index >= 0) {
+        if (index >= 0) {
             constraint.graphics.destroy();
             this.constraints.splice(index, 1);
         }

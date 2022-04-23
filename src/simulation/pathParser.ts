@@ -94,7 +94,6 @@ export function loadSimulationObjectsFromSvg(rawSvgData: string): SimulationObje
             }
         })
     });
-    console.log(streets);
     return {streets: streets, trafficLights: trafficLights, imageHeight: height, imageWidth: width};
 }
 

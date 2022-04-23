@@ -25,7 +25,7 @@ function App() {
             //simulationRef.current!.style.transform = `scale(${Math.min(scaleY, scaleX)})`;
             fetch("./Haw_Porsche_Center_Google_Earth.svg")
                 .then((response) => response.text().then((rawSvgString) => {
-                    setSimulation(createSimulation(rawSvgString, htmlElem))
+                    setSimulation(createSimulation("Haw_Porsche_Center_Google_Earth", rawSvgString, htmlElem))
                 }))
         }
     }, []);

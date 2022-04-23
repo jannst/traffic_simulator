@@ -19,6 +19,7 @@ export const Button = styled.button<BackgroundProps>`
 export const Heading = styled.h3`
   text-align: center;
   color: white;
+  margin: 3px;
 `;
 
 export const Container = styled(Box)`
@@ -38,9 +39,10 @@ export const Container = styled(Box)`
 `;
 
 export const Operation = styled(Box)`
-  font-size: 20px;
+  font-size: 16px;
   text-align: center;
-  padding: 6px;
+  padding: 3px;
+  margin: 2px;
   color: white;
   font-weight: bold;
   cursor: pointer;

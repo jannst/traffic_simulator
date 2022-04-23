@@ -1,11 +1,9 @@
 import {Box, Flex} from "./Layout";
 import {Simulation} from "./simulation/simulation";
 import {Street} from "./simulation/Street";
-import styled from "styled-components";
 import {useEffect, useState} from "react";
-import {background, BackgroundProps} from "styled-system";
 import {TrafficLight} from "./simulation/TrafficLight";
-import {Button, Text, Container, Heading, Operation, SubText} from "./StyledComponents";
+import {Button, Container, Heading, Operation, SubText, Text} from "./StyledComponents";
 import {ConstraintType} from "./simulation/Constraint";
 
 function useForceUpdate() {
@@ -14,23 +12,36 @@ function useForceUpdate() {
 }
 
 export function SimulationControls({simulation}: { simulation: Simulation }) {
-    const [allVisible, setAllVisible] = useState(false);
-    const [constraintMode, setConstraintMode] = useState<ConstraintType | undefined>()
+    const [allStreetsVisible, setAllStreetsVisible] = useState(false);
+    const [constraintsVisible, setConstraintsVisible] = useState(false);
+    const [constraintMode, setConstraintMode] = useState<ConstraintType|undefined>()
+    const forceUpdate = useForceUpdate();
 
     useEffect(() => {
-        simulation.interactionHandler.setConstraintMode(constraintMode);
+        simulation.constraintHandler.setConstraintMode(constraintMode);
+        if(constraintMode) {
+            setConstraintsVisible(true);
+        }
     }, [constraintMode]);
 
-    function toggleVisibilityForAll() {
-        simulation.streets.forEach((street => street.setHighlight(!allVisible)));
-        setAllVisible(!allVisible);
-    }
+    useEffect(() => {
+        simulation.setConstraintVisibility(constraintsVisible)
+        if(!constraintsVisible) {
+            setConstraintMode(undefined);
+        }
+    }, [constraintsVisible]);
+
+
+    useEffect(() => {
+        simulation.streets.forEach((street => street.setHighlight(allStreetsVisible)));
+        forceUpdate();
+    }, [allStreetsVisible])
 
     return (
-        <Flex flexDirection="column">
+        <Flex flexDirection="column" height="100%" overflow="hidden">
             <Box>
                 <Heading>Operations</Heading>
-                <Flex>
+                <Flex px={1}>
                     <Operation
                         background={constraintMode === "NAND" ? "orange" : "blue"}
                         onClick={() => setConstraintMode(constraintMode === "NAND" ? undefined : "NAND")}
@@ -38,11 +49,26 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
                         NAND
                     </Operation>
                 </Flex>
+                <Heading>Display</Heading>
+                <Flex px={1}>
+                    <Operation
+                        background={allStreetsVisible ? "orange" : "blue"}
+                        onClick={() => setAllStreetsVisible(!allStreetsVisible)}
+                    >
+                        STREETS
+                    </Operation>
+                    <Operation
+                        background={constraintsVisible ? "orange" : "blue"}
+                        onClick={() => setConstraintsVisible(!constraintsVisible)}
+                    >
+                        CONSTRAINTS
+                    </Operation>
+                </Flex>
             </Box>
             <Container height="100%" overflow="auto">
                 <Flex p={1} flexDirection="column" justifyContent="space-between">
                     <Box>
-                        <Heading onClick={toggleVisibilityForAll}>Streets</Heading>
+                        <Heading>Streets</Heading>
                         {simulation.streets.map((street) => <Box my={1} key={street.name}><StreetBox
                             street={street}/></Box>)}
                     </Box>

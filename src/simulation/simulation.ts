@@ -7,15 +7,18 @@ import {AlgorithmArgs, tickAlgo, TrafficLightConfiguration} from "../algo/algori
 import {TrafficLightImpl} from "./TrafficLight";
 import {Viewport} from "pixi-viewport";
 import {Constraint, ConstraintType} from "./Constraint";
-import {InteractionHandler} from "./interactions";
+import {ConstraintHandler} from "./interactions";
+import {loadConfig, saveConfig} from "./config";
+import {Simulate} from "react-dom/test-utils";
 
 export interface Simulation extends SimulationObjects {
     app: PIXI.Application,
     constraints: Constraint[]
-    interactionHandler: InteractionHandler
+    setConstraintVisibility: (value: boolean) => void
+    constraintHandler: ConstraintHandler
 }
 
-export function createSimulation(rawSvgData: string, parent: HTMLElement): Simulation {
+export function createSimulation(name: string, rawSvgData: string, parent: HTMLElement): Simulation {
     const simulationObjects: SimulationObjects = loadSimulationObjectsFromSvg(rawSvgData)
     const app = new PIXI.Application({
         //height: bgHeight,
@@ -46,7 +49,11 @@ export function createSimulation(rawSvgData: string, parent: HTMLElement): Simul
     const availiableStreets = simulationObjects.streets.filter((street) => !street.parent);
 
     const constraints: Constraint[] = [];
-    const interactionHandler = new InteractionHandler(constraints, viewport);
+    const constraintsContainer = new PIXI.Container();
+    const setConstraintVisible = (value: boolean) => constraintsContainer.visible = value
+    viewport.addChild(constraintsContainer);
+    const interactionHandler = new ConstraintHandler(constraints, constraintsContainer);
+
     //street highllighters
     simulationObjects.streets.forEach((street) => {
         const pointsGraphic: PIXI.Graphics = new PIXI.Graphics();
@@ -64,7 +71,6 @@ export function createSimulation(rawSvgData: string, parent: HTMLElement): Simul
     });
 
 
-
     //traffic light execution ticker
     setInterval(() => {
         simulationObjects.trafficLights.forEach((trafficLight) => trafficLight.tick());
@@ -74,7 +80,7 @@ export function createSimulation(rawSvgData: string, parent: HTMLElement): Simul
             updateTrafficLight: (trafficLight, state, timeUntilRed) => {
                 const mutableLight = trafficLight as any as TrafficLightImpl;
                 mutableLight.setState(state);
-                if(timeUntilRed) {
+                if (timeUntilRed) {
                     mutableLight.untilRedSec = timeUntilRed;
                 }
             }
@@ -98,6 +104,14 @@ export function createSimulation(rawSvgData: string, parent: HTMLElement): Simul
         //process cars
         environment.cars.forEach((car: Car) => car.tick(delta));
     });
+    const simulation: Simulation = {
+        app: app,
+        constraints: constraints,
+        constraintHandler: interactionHandler,
+        setConstraintVisibility: setConstraintVisible, ...simulationObjects,
+    };
+    loadConfig(name,simulation);
+    setInterval(() => saveConfig(name, simulation), 5000);
     app.start();
-    return {app: app, constraints: constraints, interactionHandler: interactionHandler,  ...simulationObjects};
+    return simulation;
 }
