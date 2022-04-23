@@ -16,7 +16,10 @@ export interface Simulation extends SimulationObjects {
     constraints: Constraint[]
     setConstraintVisibility: (value: boolean) => void
     constraintHandler: ConstraintHandler
+    setSpeed: (speed: number) => void;
 }
+
+export var simulationSpeed = 15;
 
 export function createSimulation(name: string, rawSvgData: string, parent: HTMLElement): Simulation {
     const simulationObjects: SimulationObjects = loadSimulationObjectsFromSvg(rawSvgData)
@@ -70,23 +73,23 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
         viewport.addChild(pointsGraphic);
     });
 
-
-    //traffic light execution ticker
-    setInterval(() => {
+    const tickTrafficLights = () => {
         simulationObjects.trafficLights.forEach((trafficLight) => trafficLight.tick());
         const params: AlgorithmArgs = {
             variables: simulationObjects.trafficLights as any as TrafficLightConfiguration[],
             constraints: [],
             updateTrafficLight: (trafficLight, state, timeUntilRed) => {
                 const mutableLight = trafficLight as any as TrafficLightImpl;
-                mutableLight.setState(state);
-                if (timeUntilRed) {
-                    mutableLight.untilRedSec = timeUntilRed;
-                }
+                mutableLight.setState(state, timeUntilRed);
             }
         }
         tickAlgo(params);
-    }, 1000);
+    };
+
+
+    //traffic light execution ticker
+    let intervalId = setInterval(tickTrafficLights, 1000 / simulationSpeed);
+
 
     //delete unused cars
     setInterval(() => environment.garbageCollect(), 1000);
@@ -95,7 +98,7 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
     app.ticker.add((delta) => {
         elapsedMs += app.ticker.elapsedMS;
         //generate new cars
-        if (elapsedMs >= 100) {
+        if (elapsedMs >= 100 / simulationSpeed) {
             availiableStreets.filter((street) => Math.random() <= street.percentage).forEach((street) => {
                 new CarImpl(environment, street).spawn();
             });
@@ -108,9 +111,14 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
         app: app,
         constraints: constraints,
         constraintHandler: interactionHandler,
+        setSpeed: (val) => {
+            simulationSpeed = val;
+            clearInterval(intervalId);
+            intervalId = setInterval(tickTrafficLights, 1000 / simulationSpeed);
+        },
         setConstraintVisibility: setConstraintVisible, ...simulationObjects,
     };
-    loadConfig(name,simulation);
+    loadConfig(name, simulation);
     setInterval(() => saveConfig(name, simulation), 5000);
     app.start();
     return simulation;

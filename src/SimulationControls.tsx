@@ -1,5 +1,5 @@
 import {Box, Flex} from "./Layout";
-import {Simulation} from "./simulation/simulation";
+import {Simulation, simulationSpeed} from "./simulation/simulation";
 import {Street} from "./simulation/Street";
 import {useEffect, useState} from "react";
 import {TrafficLight} from "./simulation/TrafficLight";
@@ -14,19 +14,24 @@ function useForceUpdate() {
 export function SimulationControls({simulation}: { simulation: Simulation }) {
     const [allStreetsVisible, setAllStreetsVisible] = useState(false);
     const [constraintsVisible, setConstraintsVisible] = useState(false);
-    const [constraintMode, setConstraintMode] = useState<ConstraintType|undefined>()
+    const [constraintMode, setConstraintMode] = useState<ConstraintType | undefined>()
+    const [simSpeed, setSimSpeed] = useState(1);
     const forceUpdate = useForceUpdate();
 
     useEffect(() => {
+        simulation.setSpeed(simSpeed);
+    },[simSpeed]);
+
+    useEffect(() => {
         simulation.constraintHandler.setConstraintMode(constraintMode);
-        if(constraintMode) {
+        if (constraintMode) {
             setConstraintsVisible(true);
         }
     }, [constraintMode]);
 
     useEffect(() => {
         simulation.setConstraintVisibility(constraintsVisible)
-        if(!constraintsVisible) {
+        if (!constraintsVisible) {
             setConstraintMode(undefined);
         }
     }, [constraintsVisible]);
@@ -40,6 +45,16 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
     return (
         <Flex flexDirection="column" height="100%" overflow="hidden">
             <Box>
+                <Heading>Simulation Speed {simSpeed.toFixed(1)}</Heading>
+                <input
+                    style={{width: "96%"}}
+                    id="typeinp"
+                    type="range"
+                    min="1" max="10"
+                    value={simSpeed}
+                    onChange={(event) => setSimSpeed(parseFloat(event.target.value))}
+                    step=".5"
+                />
                 <Heading>Operations</Heading>
                 <Flex px={1}>
                     <Operation
@@ -102,18 +117,20 @@ function StreetBox({street}: { street: Street }) {
             <Text>{street.name}</Text>
             {street.parent && <SubText>Parent: {street.parent.name}</SubText>}
             {street.mergesInto && <SubText>Merges Into: {street.mergesInto.street.name}</SubText>}
-            <input
-                id="typeinp"
-                type="range"
-                min="0" max="1"
-                value={street.percentage}
-                onChange={handleChange}
-                step=".05"/>
-            <Button
-                background={street.highlight ? "lightgreen" : "white"}
-                onClick={() => updateVisibility(!street.highlight)}>
-                toggle highlight
-            </Button>
+            <Flex width="100%" justifyContent="space-between">
+                <input
+                    id="typeinp"
+                    type="range"
+                    min="0" max="1"
+                    value={street.percentage}
+                    onChange={handleChange}
+                    step=".025"/>
+                <Button
+                    background={street.highlight ? "lightgreen" : "white"}
+                    onClick={() => updateVisibility(!street.highlight)}>
+                    highlight
+                </Button>
+            </Flex>
         </Box>
     )
 }
@@ -127,13 +144,13 @@ function TrafficLightBox({trafficLight}: { trafficLight: TrafficLight }) {
     }
 
     return (
-        <Box p={1} background="lightgrey">
+        <Flex p={1} background="lightgrey" justifyContent="space-between">
             <Text>{trafficLight.name}</Text>
             <Button
                 background={trafficLight.highlight ? "lightgreen" : "white"}
                 onClick={() => updateVisibility(!trafficLight.highlight)}>
-                toggle highlight
+                highlight
             </Button>
-        </Box>
+        </Flex>
     )
 }

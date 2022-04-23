@@ -8,12 +8,13 @@ import carImg2 from "../sprites/car-truck2.png";
 import carImg3 from "../sprites/car-truck3.png";
 import carImg4 from "../sprites/car-truck4.png";
 import {Street} from "./Street";
+import {simulationSpeed} from "./simulation";
 
 export interface Car {
     sprite: Sprite,
     street: Street,
     dotIndex: number,
-    pxPerTick: number,
+    //pxPerTick: number,
     garbage: boolean,
     checkCollisions: boolean,
     mustWait?: boolean
@@ -92,7 +93,7 @@ export class CarImpl implements Car {
     public checkCollisions: boolean;
     public dotIndex: number;
     public garbage: boolean;
-    public pxPerTick: number;
+    //public pxPerTick: number;
     public sprite: Sprite;
     public street: Street;
     private environment: Environment;
@@ -105,7 +106,7 @@ export class CarImpl implements Car {
         this.dotIndex = 0;
         this.garbage = false;
         //speed of the car
-        this.pxPerTick = 2.5;
+        //this.pxPerTick = 2.5*10;
 
         this.sprite.x = street.dots[0]!.x;
         this.sprite.y = street.dots[0]!.y;
@@ -139,6 +140,10 @@ export class CarImpl implements Car {
             return false;
         } else if (this.environment.trySetPosition(this, this.street.dots[this.dotIndex + 1])) {
             this.dotIndex++;
+            if(this.street.dots[this.dotIndex].trafficLight) {
+                this.street.dots[this.dotIndex].trafficLight!.addCarToStatistics(this);
+            }
+            //check if some other street begins here and maybe branch to it
             if (this.dotIndex in this.street.children && Math.random() <= this.street.children[this.dotIndex].street.percentage) {
                 this.changeStreet({street: this.street.children[this.dotIndex].street, targetIndex: 0});
             }
@@ -239,7 +244,7 @@ export class CarImpl implements Car {
             return;
         }
         if (this.dotIndex < this.street.dots.length - 1) {
-            const distToTravel = this.pxPerTick;
+            const distToTravel = 2.5*simulationSpeed;//this.pxPerTick;
             let dist = 0;
             let distToNext = distance(this.sprite, this.street.dots[this.dotIndex + 1]);
             while (dist < distToTravel) {
