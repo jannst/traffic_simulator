@@ -1,5 +1,4 @@
 import {Graphics, Text} from "pixi.js";
-import {TrafficLightConfiguration} from "../algo/algorithm";
 import {Dot} from "./pathParser";
 import {Car} from "./car";
 
@@ -9,7 +8,7 @@ export interface TrafficLight {
     polygon: number[],
     name: string,
     state: boolean
-    setState: (state: boolean) => void
+    setState: (state: boolean, timeUntilRed?: number) => void
     drawState: () => void
     setHighlight: (highlight: boolean) => void
     highlight: boolean;
@@ -18,11 +17,14 @@ export interface TrafficLight {
     addCarToStatistics: (car: Car) => void
     onClick?: OnClickTrafficLight
     tick: () => void
+    avgCarsPerSec: number;
+    redTimeSec: number;
+    untilRedSec: number;
 }
 
 const NUM_GREEN_PHASE_SAMPLES = 6;
 
-export class TrafficLightImpl implements TrafficLight, TrafficLightConfiguration {
+export class TrafficLightImpl implements TrafficLight {
     name: string;
     polygon: number[];
     graphics?: Graphics;

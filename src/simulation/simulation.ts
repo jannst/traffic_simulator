@@ -3,13 +3,12 @@ import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
 import {loadSimulationObjectsFromSvg, SimulationObjects} from "./pathParser";
 import {Environment, EnvironmentImpl} from "./environment";
 import {Car, CarImpl} from "./car";
-import {AlgorithmArgs, tickAlgo, TrafficLightConfiguration} from "../algo/algorithm";
-import {TrafficLightImpl} from "./TrafficLight";
+import {tickAlgo} from "../algo/algorithm";
 import {Viewport} from "pixi-viewport";
-import {Constraint, ConstraintType} from "./Constraint";
+import {Constraint} from "./Constraint";
 import {ConstraintHandler} from "./interactions";
 import {loadConfig, saveConfig} from "./config";
-import {Simulate} from "react-dom/test-utils";
+import {TrafficLightSolver} from "../algo/solver";
 
 export interface Simulation extends SimulationObjects {
     app: PIXI.Application,
@@ -75,15 +74,7 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
 
     const tickTrafficLights = () => {
         simulationObjects.trafficLights.forEach((trafficLight) => trafficLight.tick());
-        const params: AlgorithmArgs = {
-            variables: simulationObjects.trafficLights as any as TrafficLightConfiguration[],
-            constraints: [],
-            updateTrafficLight: (trafficLight, state, timeUntilRed) => {
-                const mutableLight = trafficLight as any as TrafficLightImpl;
-                mutableLight.setState(state, timeUntilRed);
-            }
-        }
-        tickAlgo(params);
+        tickAlgo(simulationObjects.trafficLights, constraints);
     };
 
 
