@@ -3,28 +3,27 @@ import bgImg from "../Haw_Porsche_Center_Google_Earth.png";
 import {loadSimulationObjectsFromSvg, SimulationObjects} from "./pathParser";
 import {Environment, EnvironmentImpl} from "./environment";
 import {Car, CarImpl} from "./car";
-import {tickAlgo} from "../algo/algorithm";
+import {findSubSystems, tickAlgo} from "../algo/algorithm";
 import {Viewport} from "pixi-viewport";
 import {Constraint} from "./Constraint";
 import {ConstraintHandler} from "./interactions";
 import {loadConfig, saveConfig} from "./config";
-import {TrafficLightSolver} from "../algo/solver";
 
 export interface Simulation extends SimulationObjects {
     app: PIXI.Application,
     constraints: Constraint[]
     setConstraintVisibility: (value: boolean) => void
+    setshowTrafficLightNet: (value: boolean) => void
     constraintHandler: ConstraintHandler
     setSpeed: (speed: number) => void;
 }
 
 export var simulationSpeed = 15;
+export var showTrafficLightNet = false;
 
 export function createSimulation(name: string, rawSvgData: string, parent: HTMLElement): Simulation {
     const simulationObjects: SimulationObjects = loadSimulationObjectsFromSvg(rawSvgData)
     const app = new PIXI.Application({
-        //height: bgHeight,
-        //width: bgWidth,
         resizeTo: parent,
         backgroundColor: 0x333333,
         resolution: window.devicePixelRatio || 1,
@@ -53,6 +52,7 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
     const constraints: Constraint[] = [];
     const constraintsContainer = new PIXI.Container();
     const setConstraintVisible = (value: boolean) => constraintsContainer.visible = value
+    const setTrafficLightNetVisible = (value: boolean) => showTrafficLightNet = value
     viewport.addChild(constraintsContainer);
     const interactionHandler = new ConstraintHandler(constraints, constraintsContainer);
 
@@ -107,9 +107,11 @@ export function createSimulation(name: string, rawSvgData: string, parent: HTMLE
             clearInterval(intervalId);
             intervalId = setInterval(tickTrafficLights, 1000 / simulationSpeed);
         },
+        setshowTrafficLightNet: setTrafficLightNetVisible,
         setConstraintVisibility: setConstraintVisible, ...simulationObjects,
     };
     loadConfig(name, simulation);
+    findSubSystems(simulationObjects.trafficLights, constraints);
     setInterval(() => saveConfig(name, simulation), 5000);
     app.start();
     return simulation;

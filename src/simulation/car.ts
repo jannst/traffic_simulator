@@ -9,6 +9,7 @@ import carImg3 from "../sprites/car-truck3.png";
 import carImg4 from "../sprites/car-truck4.png";
 import {Street} from "./Street";
 import {simulationSpeed} from "./simulation";
+import {TrafficLight} from "./TrafficLight";
 
 export interface Car {
     sprite: Sprite,
@@ -17,7 +18,8 @@ export interface Car {
     //pxPerTick: number,
     garbage: boolean,
     checkCollisions: boolean,
-    mustWait?: boolean
+    mustWait?: boolean,
+    lastTrafficLight?: TrafficLight,
 
     /***
      * Function which is used to check if there is enough distance between the current car and the
@@ -96,6 +98,7 @@ export class CarImpl implements Car {
     //public pxPerTick: number;
     public sprite: Sprite;
     public street: Street;
+    public lastTrafficLight?: TrafficLight;
     private environment: Environment;
 
     constructor(environment: Environment, street: Street) {

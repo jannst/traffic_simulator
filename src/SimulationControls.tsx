@@ -1,5 +1,5 @@
 import {Box, Flex} from "./Layout";
-import {Simulation, simulationSpeed} from "./simulation/simulation";
+import {Simulation} from "./simulation/simulation";
 import {Street} from "./simulation/Street";
 import {useEffect, useState} from "react";
 import {TrafficLight} from "./simulation/TrafficLight";
@@ -14,6 +14,7 @@ function useForceUpdate() {
 export function SimulationControls({simulation}: { simulation: Simulation }) {
     const [allStreetsVisible, setAllStreetsVisible] = useState(false);
     const [constraintsVisible, setConstraintsVisible] = useState(false);
+    const [trafficLightNetVisible, setTrafficLightetVisible] = useState(false);
     const [constraintMode, setConstraintMode] = useState<ConstraintType | undefined>()
     const [simSpeed, setSimSpeed] = useState(1);
     const forceUpdate = useForceUpdate();
@@ -42,6 +43,10 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
         forceUpdate();
     }, [allStreetsVisible])
 
+    useEffect(() => {
+        simulation.setshowTrafficLightNet(trafficLightNetVisible);
+    }, [trafficLightNetVisible])
+
     return (
         <Flex flexDirection="column" height="100%" overflow="hidden">
             <Box>
@@ -55,7 +60,7 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
                     onChange={(event) => setSimSpeed(parseFloat(event.target.value))}
                     step=".5"
                 />
-                <Heading>Operations</Heading>
+                <Heading>Add Constraints</Heading>
                 <Flex px={1}>
                     <Operation
                         background={constraintMode === "NAND" ? "orange" : "blue"}
@@ -64,8 +69,8 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
                         NAND
                     </Operation>
                 </Flex>
-                <Heading>Display</Heading>
-                <Flex px={1}>
+                <Heading>Show/Hide</Heading>
+                <Flex px={1} flexWrap="wrap">
                     <Operation
                         background={allStreetsVisible ? "orange" : "blue"}
                         onClick={() => setAllStreetsVisible(!allStreetsVisible)}
@@ -77,6 +82,12 @@ export function SimulationControls({simulation}: { simulation: Simulation }) {
                         onClick={() => setConstraintsVisible(!constraintsVisible)}
                     >
                         CONSTRAINTS
+                    </Operation>
+                    <Operation
+                        background={trafficLightNetVisible ? "orange" : "blue"}
+                        onClick={() => setTrafficLightetVisible(!trafficLightNetVisible)}
+                    >
+                        TRAFFIC LIGHT NET
                     </Operation>
                 </Flex>
             </Box>

@@ -1,6 +1,7 @@
 import {Graphics, Text} from "pixi.js";
 import {Dot} from "./pathParser";
 import {Car} from "./car";
+import {showTrafficLightNet} from "./simulation";
 
 export type OnClickTrafficLight = (trafficLight: TrafficLight) => void;
 
@@ -8,7 +9,7 @@ export interface TrafficLight {
     polygon: number[],
     name: string,
     state: boolean
-    setState: (state: boolean, timeUntilRed?: number) => void
+    setState: (state: boolean) => void
     drawState: () => void
     setHighlight: (highlight: boolean) => void
     highlight: boolean;
@@ -19,10 +20,10 @@ export interface TrafficLight {
     tick: () => void
     avgCarsPerSec: number;
     redTimeSec: number;
-    untilRedSec: number;
+    previousTrafficLights?: {tl: TrafficLight, percentage: number}[];
 }
 
-const NUM_GREEN_PHASE_SAMPLES = 6;
+const CAR_PER_SEC_SAMPLES = 50;
 
 export class TrafficLightImpl implements TrafficLight {
     name: string;
@@ -31,11 +32,11 @@ export class TrafficLightImpl implements TrafficLight {
     highlight: boolean = false;
     state: boolean = false;
     avgCarsPerSec: number = 0;
+    previousTrafficLights?: {tl: TrafficLight, percentage: number}[];
     redTimeSec: number = 0;
-    untilRedSec: number = 0;
     onClick?: () => void
 
-    carStats: { cars: Car[], greenTime: number }[] = []
+    carStats: { cars: Car[], previousTrafficLights: TrafficLight[]}[] = []
 
     constructor(name: string, polygon: number[]) {
         this.name = name;
@@ -48,10 +49,10 @@ export class TrafficLightImpl implements TrafficLight {
     tick() {
         //console.log(`tick ${this.name} ${this.redTimeSec} ${this.untilRedSec}`);
         if (this.state) {
-            this.untilRedSec--;
-            if (this.untilRedSec <= 0) {
-                this.setState(false);
-            }
+            this.carStats.splice(0, 0, {cars: [], previousTrafficLights: []});
+            this.carStats = this.carStats.slice(0, CAR_PER_SEC_SAMPLES - 1);
+            this.calculateStatistics();
+            this.drawState();
         } else {
             this.redTimeSec++;
         }
@@ -60,6 +61,10 @@ export class TrafficLightImpl implements TrafficLight {
     addCarToStatistics(car: Car) {
         if (this.state && this.carStats.length && !this.carStats[0].cars.includes(car)) {
             this.carStats[0].cars.push(car);
+            if(car.lastTrafficLight) {
+                this.carStats[0].previousTrafficLights.push(car.lastTrafficLight);
+            }
+            car.lastTrafficLight = this;
         }
     }
 
@@ -108,6 +113,14 @@ export class TrafficLightImpl implements TrafficLight {
             text.position.y = center.y;
             text.zIndex = 1;
             this.graphics.addChild(text);
+            if(showTrafficLightNet && this.previousTrafficLights) {
+                this.previousTrafficLights.forEach((entry) => {
+                    this.graphics!.lineStyle(entry.percentage*10, 0x0000FF, .5);
+                    this.graphics!.moveTo(center.x, center.y);
+                    const otherCenter = entry.tl.primitiveCenterPoint();
+                    this.graphics!.lineTo(otherCenter.x, otherCenter.y);
+                });
+            }
         }
     }
 
@@ -122,32 +135,32 @@ export class TrafficLightImpl implements TrafficLight {
         return result;
     }
 
-    setState(state: boolean, timeUntilRed?: number): void {
+    setState(state: boolean): void {
         this.state = state;
         if (state) {
             this.redTimeSec = 0;
-            if (timeUntilRed) {
-                this.untilRedSec = timeUntilRed!;
-            }
-            this.carStats.splice(0, 0, {cars: [], greenTime: this.untilRedSec});
-            //keep 11 items
-            this.carStats = this.carStats.slice(0, NUM_GREEN_PHASE_SAMPLES-1);
         } else {
-            this.untilRedSec = 0;
             this.calculateStatistics();
         }
         this.drawState();
     }
 
     calculateStatistics() {
-        let totNumCars = 0;
-        let totSecGreen = 0;
-        this.carStats.slice(0, NUM_GREEN_PHASE_SAMPLES-1).forEach((entry) => {
-            totNumCars += entry.cars.length;
-            totSecGreen += entry.greenTime;
-        });
-        if (totSecGreen > 0) {
-            this.avgCarsPerSec = totNumCars / totSecGreen;
+        if (this.carStats.length) {
+            let totNumCars = 0;
+            let previousTrafficLights: {[key: string]: {tl: TrafficLight, num: number}} = {};
+            this.carStats.slice(0, CAR_PER_SEC_SAMPLES - 1).forEach((entry) => {
+                totNumCars += entry.cars.length;
+                entry.previousTrafficLights.forEach((tl) => {
+                    if(tl.name in previousTrafficLights) {
+                        previousTrafficLights[tl.name].num++;
+                    } else {
+                        previousTrafficLights[tl.name] = {tl: tl, num: 1};
+                    }
+                })
+            });
+            this.avgCarsPerSec = totNumCars / this.carStats.length;
+            this.previousTrafficLights = Object.values(previousTrafficLights).map(entry => ({tl: entry.tl, percentage: entry.num/totNumCars}))
         }
     }
 }

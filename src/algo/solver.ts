@@ -1,21 +1,13 @@
 import {Constraint} from "../simulation/Constraint";
 import {TrafficLight} from "../simulation/TrafficLight";
 
-type DomainValue = 'SWITCH_ON' | 'UNCHANGED';
-
-export type UnaryConstraint = (variable: Variable,) => boolean
-const isRedAtLeast2Sec = (trafficLight: TrafficLight) => trafficLight.redTimeSec >= 2;
+type DomainValue = 'ON' | 'OFF';
 
 interface Variable {
     trafficLight: TrafficLight
     domain: DomainValue[]
 }
 
-function deleteSwitchOnFromDomain(v: Variable) {
-    if (v.domain.includes("SWITCH_ON")) {
-        v.domain.splice(v.domain.indexOf("SWITCH_ON"), 1);
-    }
-}
 
 export interface NandConstraint {
     a: Variable
@@ -26,6 +18,13 @@ export interface Solution {
     tl: TrafficLight
     val: DomainValue
 }
+
+function deleteSwitchOnFromDomain(v: Variable) {
+    if (v.domain.includes("ON")) {
+        v.domain.splice(v.domain.indexOf("ON"), 1);
+    }
+}
+const isRedAtLeast2Sec = (trafficLight: TrafficLight) => true;//trafficLight.redTimeSec >= 2;
 
 
 export class TrafficLightSolver {
@@ -40,7 +39,7 @@ export class TrafficLightSolver {
         //trafficLights in Variablen überführen
         this.variables = trafficLights.map((tl) => {
             return {
-                domain: ["UNCHANGED", "SWITCH_ON"],
+                domain: ["OFF", "ON"],
                 trafficLight: tl
             };
         });
@@ -48,8 +47,6 @@ export class TrafficLightSolver {
         constraints.forEach((c) => {
             const varA = this.variables.find((v) => v.trafficLight === c.a)!;
             const varB = this.variables.find((v) => v.trafficLight === c.b)!;
-            //varA.connectedVariables.push(varB);
-            //varB.connectedVariables.push(varA);
             this.constraints.push({a: varA, b: varB});
             this.constraints.push({a: varB, b: varA});
         });
@@ -79,9 +76,9 @@ export class TrafficLightSolver {
         // Revise kann vereinfacht werden, da es nur den NAND constraint gibt und
         // es nur einen einzigen Fall gibt, wo eine Wert in der Domain von vi
         // nicht mit der anderen Variable vereinbar ist.
-        // Dies ist der Fall, wenn vj schon gewählt wurde und die Wertemenge = ["SWITCH_ON"]
-        // Dann dart der Wert von vi nur "UNCHANGED" sein!
-        if (vj.domain.includes("SWITCH_ON") && vj.domain.length === 1) {
+        // Dies ist der Fall, wenn vj schon gewählt wurde und die Wertemenge = ["ON"]
+        // Dann dart der Wert von vi nur "OFF" sein!
+        if (vj.domain.includes("ON") && vj.domain.length === 1) {
             deleteSwitchOnFromDomain(vi);
             return true;
         }
@@ -106,7 +103,7 @@ export class TrafficLightSolver {
         return consistent;
     }
 
-    solve(): Solution[]|undefined {
+    solve(): Solution[][] {
         //Constraint Vorverarbeitung:
         //Wenn eine Ampel noch nicht mindestens 2 Sekunden rot ist, darf sie nicht auf grün geschaltet werden
         //Ampeln die grün sind können, logischwerweise nicht seit 2 sek rot sein, fallen also auch hier raus.
@@ -126,14 +123,12 @@ export class TrafficLightSolver {
         })
         //Eine Vorvearbeitung mit dem AC (arc consistency) algorithmus ist hier nicht notwendig, da
         //das Netz in jedem Fall Kantenkonsistent ist, da der einzige Constraint der NAND constraint ist,
-        //der prüft, dass nicht 2 verbundene Variablen beide den Wert "SWITCH_ON" haben.
-        //Da aber jede Variable immer auch den Wert "UNCHANGED" in der Domäne hat, ist dieser Constraint überall erfüllbar
+        //der prüft, dass nicht 2 verbundene Variablen beide den Wert "ON" haben.
+        //Da aber jede Variable immer auch den Wert "OFF" in der Domäne hat, ist dieser Constraint überall erfüllbar
 
-        const values: DomainValue[] = ["UNCHANGED", "SWITCH_ON"];
-        let bestScore = 0;
-        let bestSumSecRed = Number.POSITIVE_INFINITY;
-        let bestSolution = undefined;
-        console.log("vars:", this.variables);
+        const values: DomainValue[] = ["OFF", "ON"];
+        const solutions: Solution[][] = [];
+        //console.log("vars:", this.variables);
         outer_loop:
             while (true) {
                 //console.log("outer while")
@@ -161,27 +156,12 @@ export class TrafficLightSolver {
                     }
                 }
                 if(this.currentIndex === this.variables.length-1) {
-                    //alle variablen sind durchlaufen
-                    let numLightsGreen = 0;
-                    let sumSecRed = 0;
-                    this.variables.forEach((v) => {
-                        if(v.domain[0] === "SWITCH_ON") {
-                            numLightsGreen++;
-                        } else {
-                            sumSecRed += v.trafficLight.redTimeSec*(v.trafficLight.avgCarsPerSec > 0 ? v.trafficLight.avgCarsPerSec : 1);
-                        }
-                    });
-                    const score = sumSecRed
-                    if(sumSecRed < bestSumSecRed){
-                        bestSumSecRed = sumSecRed;
-                        //bestScore = score;
-                        bestSolution = this.variables.map((v) => ({tl: v.trafficLight, val: v.domain[0]!}));
-                    }
+                    //alle variablen sind durchlaufen und besetzt => eine Lösung wurde gefunden
+                    solutions.push(this.variables.map((v) => ({tl: v.trafficLight, val: v.domain[0]!})));
                 }
                 this.currentIndex++;
                 this.currentValueIndex = 0;
             }
-            console.log("solution: ", bestSolution);
-            return bestSolution;
+            return solutions;
     }
 }
