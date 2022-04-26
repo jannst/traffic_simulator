@@ -82,14 +82,14 @@ function solutionScore(solutions: Solution[]) {
         const multiplier = Math.min(3, Math.max(1, solution.tl.avgCarsPerSec))
         if (solution.tl.state) {
             //auf rot stellen verlangsamt den verkehr, deswegen wir der score gesenkt
-            score += solution.val === "ON" ? 3 * multiplier : -8 * multiplier
+            score += solution.val === "ON" ? multiplier : -8 * multiplier
         } else if (solution.val === "ON") {
             //auf grün schalten minimiert die wartezeit an einer ampel
             score += solution.tl.redTimeSec * multiplier
             if (solution.tl.previousTrafficLights) {
                 solution.tl.previousTrafficLights.forEach(ptl => {
                     if (activeLights.includes(ptl.tl)) {
-                        score += multiplier * ptl.percentage * 2
+                        score += multiplier * ptl.percentage
                     }
                 });
             }
