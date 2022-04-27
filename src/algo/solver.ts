@@ -24,7 +24,6 @@ function deleteSwitchOnFromDomain(v: Variable) {
         v.domain.splice(v.domain.indexOf("ON"), 1);
     }
 }
-const isRedAtLeast2Sec = (trafficLight: TrafficLight) => true;//trafficLight.redTimeSec >= 2;
 
 
 export class TrafficLightSolver {
@@ -104,23 +103,6 @@ export class TrafficLightSolver {
     }
 
     solve(): Solution[][] {
-        //Constraint Vorverarbeitung:
-        //Wenn eine Ampel noch nicht mindestens 2 Sekunden rot ist, darf sie nicht auf grün geschaltet werden
-        //Ampeln die grün sind können, logischwerweise nicht seit 2 sek rot sein, fallen also auch hier raus.
-        //Alle Ampeln, die mit einem NAND Constraint verbunden sind, müssen beide mindestens seit 2 Sekunden rot sein,
-        //damit eine Ampel von beiden später auf Grün schalten kann. Andernfalls könnten ja noch Autos
-        //von der Straße der jeweils anderen Ampel die Kreuzung blockieren
-        this.variables.forEach((v) => {
-            if (!isRedAtLeast2Sec(v.trafficLight)) {
-                deleteSwitchOnFromDomain(v);
-            }
-        });
-        this.constraints.forEach((c) => {
-            if (!isRedAtLeast2Sec(c.a.trafficLight) || !isRedAtLeast2Sec(c.b.trafficLight)) {
-                deleteSwitchOnFromDomain(c.a);
-                deleteSwitchOnFromDomain(c.b);
-            }
-        })
         //Eine Vorvearbeitung mit dem AC (arc consistency) algorithmus ist hier nicht notwendig, da
         //das Netz in jedem Fall Kantenkonsistent ist, da der einzige Constraint der NAND constraint ist,
         //der prüft, dass nicht 2 verbundene Variablen beide den Wert "ON" haben.
