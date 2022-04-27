@@ -152,7 +152,8 @@ export class TrafficLightSolver {
                     //console.log(this.variables.map((v) => ({domain: v.domain})));
                     if (!this.arcConsistency3LA()) {
                         console.log("ac3 failed :(");
-                        //this.stackPop();
+                        //will never happen in this use case
+                        throw new Error("invalid state");
                     }
                 }
                 if(this.currentIndex === this.variables.length-1) {

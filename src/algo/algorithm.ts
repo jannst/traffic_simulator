@@ -49,7 +49,7 @@ export function findSubSystems(variables: TrafficLight[], constraints: Constrain
         });
         const includedVars: TrafficLight[] = [];
         const bestSolutions = [];
-        for (let i = 0; i < intersection.variables.length; i++) {
+        for (let i = 0; i < solutions.length; i++) {
             let atLeastOneNew = false;
             solutions[i].forEach((s) => {
                 if (s.val === "ON" && !includedVars.includes(s.tl)) {
