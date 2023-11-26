@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/static/css/main.38d169d5.css",
-    "main.js": "/static/js/main.b1acde4c.js",
-    "static/media/Haw_Porsche_Center_Google_Earth.png": "/static/media/Haw_Porsche_Center_Google_Earth.b002b0d26d21540cb60c.png",
-    "index.html": "/index.html",
-    "main.38d169d5.css.map": "/static/css/main.38d169d5.css.map",
-    "main.b1acde4c.js.map": "/static/js/main.b1acde4c.js.map"
+    "main.css": "/traffic_simulator/static/css/main.38d169d5.css",
+    "main.js": "/traffic_simulator/static/js/main.3f9b0935.js",
+    "static/media/Haw_Porsche_Center_Google_Earth.png": "/traffic_simulator/static/media/Haw_Porsche_Center_Google_Earth.b002b0d26d21540cb60c.png",
+    "index.html": "/traffic_simulator/index.html",
+    "main.38d169d5.css.map": "/traffic_simulator/static/css/main.38d169d5.css.map",
+    "main.3f9b0935.js.map": "/traffic_simulator/static/js/main.3f9b0935.js.map"
   },
   "entrypoints": [
     "static/css/main.38d169d5.css",
-    "static/js/main.b1acde4c.js"
+    "static/js/main.3f9b0935.js"
   ]
 }
