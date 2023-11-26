@@ -1,5 +1,6 @@
 {
   "name": "traffic_simulator",
+  "homepage": "https://jannst.github.io/traffic_simulator/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
